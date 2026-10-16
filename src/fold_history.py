@@ -529,22 +529,28 @@ def lazy_histories(p, reals, k, ctarget=0, limit=20000):
 
 # ---------------------------------------------------------------- analysis of the chosen resolution
 class Checker:
-    """Satisfiability under the fixed geometry, with lazy vertices refined until the model is valid.
-    The geometry is the option chosen at every vertex and, if pin, the path of every cancelled segment."""
-    def __init__(self, P, res, pin=True, budget=3600):
+    """Satisfiability over a set of resolutions, with lazy vertices refined until the model is valid.
+    scope='geometry': the resolutions with the geometry of res, that is the option chosen at every
+    vertex and, if pin, the path of every cancelled segment.  scope='minimal': every resolution of
+    minimal cost among the options in res['opts']."""
+    def __init__(self, P, res, pin=True, budget=3600, scope='geometry'):
         self.P, self.M, self.opts = P, res['model'], res['opts']
         self.deadline = time.time() + budget; self.unknown = 0
         M, m = self.M, res['m']
         self.s = M.s
-        self.base = list(M.track) + [b if z3.is_true(m.eval(b)) else z3.Not(b) for b in M.sel.values()]
-        if pin:
-            g = z3.Bool('geometry'); self.s.add(z3.Implies(g, M.geometry(res['choice'], m))); self.base.append(g)
+        if scope == 'minimal':
+            g = z3.FreshBool('minimal'); self.s.add(z3.Implies(g, M.cost() == res['cost']))
+            self.base = list(M.track) + [g]
+        else:
+            self.base = list(M.track) + [b if z3.is_true(m.eval(b)) else z3.Not(b) for b in M.sel.values()]
+        if pin and scope != 'minimal':
+            g = z3.FreshBool('geometry'); self.s.add(z3.Implies(g, M.geometry(res['choice'], m))); self.base.append(g)
         self.n = 0
 
     def check(self, extra=None):
         lits = list(self.base)
         if extra is not None:
-            self.n += 1; a = z3.Bool('q%d' % self.n); self.s.add(z3.Implies(a, extra)); lits.append(a)
+            self.n += 1; a = z3.FreshBool('q'); self.s.add(z3.Implies(a, extra)); lits.append(a)
         while True:
             self.s.set('timeout', max(1, int(1000 * (self.deadline - time.time()))))
             r = self.s.check(lits)
@@ -567,21 +573,23 @@ def walk(P, M, m, o, r, k1, skip_v, skip_c, depth=0):
     return [o, end], 'boundary'
 
 
-def analyse(P, res, log=print, pin=True, budget=3600):
-    """Folds and forced order under the fixed geometry.  A query that z3 cannot decide within the
-    budget counts as not proven, so the folds may be finer and the order smaller, never wrong;
-    res['analysis_unknown'] is the number of such queries."""
-    C = Checker(P, res, pin, budget); M = C.M
+def analyse(P, res, log=print, pin=True, budget=3600, scope='geometry'):
+    """Folds and forced order over the resolutions of Checker(scope).  With scope='minimal' only
+    visible creases are analysed, since hidden ones need not exist in every minimal resolution.
+    A query that z3 cannot decide within the budget counts as not proven, so the folds may be finer
+    and the order smaller, never wrong; res['analysis_unknown'] is the number of such queries."""
+    C = Checker(P, res, pin, budget, scope); M = C.M
     m = C.check()
-    if not isinstance(m, z3.ModelRef): raise RuntimeError('analysis: the fixed geometry is not confirmed satisfiable')
-    keys = list(range(len(P.crease))) + [((p, r), i) for p, R in res['choice'].items() for r in R for i in (1, 2)]
+    if not isinstance(m, z3.ModelRef): raise RuntimeError('analysis: the resolutions are not confirmed to exist')
+    keys = list(range(len(P.crease)))
+    if scope != 'minimal': keys += [((p, r), i) for p, R in res['choice'].items() for r in R for i in (1, 2)]
     val = {k: m.eval(M.t(k), model_completion=True).as_long() for k in keys}
     par = {k: k for k in keys}
     def find(x):
         while par[x] != x: par[x] = par[par[x]]; x = par[x]
         return x
     for p in P.interior:
-        its = [e for _, e in P.H[p]] + [((p, r), i) for r in res['choice'].get(p, ()) for i in (1, 2)]
+        its = [e for _, e in P.H[p]] + ([((p, r), i) for r in res['choice'].get(p, ()) for i in (1, 2)] if scope != 'minimal' else [])
         for a, b in itertools.combinations(its, 2):
             if val[a] == val[b] and find(a) != find(b) and C.check(M.t(a) != M.t(b)) is None:
                 par[find(a)] = find(b)
@@ -596,7 +604,8 @@ def analyse(P, res, log=print, pin=True, budget=3600):
         elif not isinstance(m2, str):
             v2 = {k: m2.eval(M.t(k), model_completion=True).as_long() for k in reps}
             cand = {(a, b) for a, b in cand if v2[a] < v2[b]}
-    paths = {(p, r): walk(P, M, m, P.V[p], r, (p, r), p, None) for p, R in res['choice'].items() for r in R}
+    mp = m if scope != 'minimal' else res['m']           # the drawn segments are those of res
+    paths = {(p, r): walk(P, M, mp, P.V[p], r, (p, r), p, None) for p, R in res['choice'].items() for r in R}
     res['analysis_unknown'] = C.unknown
     return folds, lt, val, paths
 

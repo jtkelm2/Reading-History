@@ -18,9 +18,9 @@ Congruences hold to within EPS_EQ, and (C) treats a preimage within DELTA of a p
 as not inside the piece.  Every history found is re-checked in floating point with the
 functions of fold_history (maps, collision_free).
 
-Usage: python3 src/exact_local.py pattern.fold [vertex ...] [--kmax=K]
+Usage: python3 src/exact_local.py pattern.fold [vertex ...] [--kmax=K] [--seconds=S per k]
 """
-import itertools, math, sys
+import itertools, math, sys, time
 import z3
 import fold_history as fh
 
@@ -28,6 +28,10 @@ PI = math.pi
 DELTA = 1e-6
 EPS_EQ = 1e-9
 ZPI = z3.RealVal(repr(PI))
+
+
+class Undecided(Exception):
+    """The deadline passed, or z3 returned unknown, before the search finished."""
 
 
 class Lin:
@@ -54,7 +58,7 @@ class Vertex:
         for comp in itertools.product(range(self.k + 1), repeat=n):
             if sum(comp) == self.k: yield comp
 
-    def search(self, comp, limit=1, log=None):
+    def search(self, comp, limit=1, deadline=math.inf):
         """Histories for one placement: comp[g] hidden rays in the gap after visible ray g."""
         A, n = self.A, len(self.A)
         self.rays = []                                    # ('v', g) or ('h', i), counterclockwise
@@ -74,7 +78,7 @@ class Vertex:
                 s.add((pos[j] - pos[j - 1]).z3(X) >= DELTA, (nxt - pos[j]).z3(X) >= DELTA)
         N = len(self.rays)
         status = {j: 0 for j in range(N)}                 # 0 not made, 1 present, 2 erased (hidden)
-        self.found, self.nodes = [], 0
+        self.found, self.nodes, self.deadline = [], 0, deadline
         self.dfs(status, [], limit)
         return self.found
 
@@ -149,7 +153,12 @@ class Vertex:
                 cs = self.step_constraints(status, list(T))
                 if cs is None: continue
                 self.s.push(); self.s.add(cs)
-                if self.s.check() == z3.sat:
+                left = self.deadline - time.time()
+                if left <= 0: raise Undecided()
+                if left < 1e6: self.s.set('timeout', max(1, int(1000 * left)))
+                r = self.s.check()
+                if r == z3.unknown: raise Undecided()
+                if r == z3.sat:
                     st2 = dict(status)
                     for j in T: st2[j] = 1 if status[j] == 0 else 2
                     hist.append(T); self.dfs(st2, hist, limit); hist.pop()
@@ -182,23 +191,29 @@ class Vertex:
         return ' -> '.join(out)
 
 
-def min_history(A, kmax=4, log=print):
-    """Smallest k <= kmax with a local history, and one history; (None, None) if there is none."""
-    for k in range(kmax + 1):
-        V = Vertex(A, k); nodes = 0
-        for comp in V.placements():
-            f = V.search(comp); nodes += V.nodes
-            if f:
-                m, hist = f[0]; bad = V.verify(m, hist)
-                return k, (V.describe(m, hist), bad)
+def min_history(A, kmax=4, log=print, seconds=math.inf, kmin=0):
+    """Smallest k in [kmin, kmax] with a local history, and one history: (k, (text, float check)).
+    (None, None) if there is none up to kmax; ('undecided', k) if the search for k ran out of
+    seconds (each k gets its own allowance)."""
+    for k in range(kmin, kmax + 1):
+        V = Vertex(A, k); nodes = 0; deadline = time.time() + seconds
+        try:
+            for comp in V.placements():
+                f = V.search(comp, deadline=deadline); nodes += V.nodes
+                if f:
+                    m, hist = f[0]; bad = V.verify(m, hist)
+                    return k, (V.describe(m, hist), bad)
+        except Undecided:
+            log('  k=%d: undecided after %.0f s' % (k, seconds)); return 'undecided', k
         log('  k=%d: no history (%d search nodes)' % (k, nodes))
     return None, None
 
 
 def main(argv):
-    kmax = 4; args = []
+    kmax, secs, args = 4, math.inf, []
     for a in argv:
         if a.startswith('--kmax='): kmax = int(a[7:])
+        elif a.startswith('--seconds='): secs = float(a[10:])
         else: args.append(a)
     path, verts = args[0], [int(v) for v in args[1:]]
     for tol in (1e-6, 1e-4, 5e-4, 2e-3):
@@ -207,7 +222,8 @@ def main(argv):
     for p in verts or P.interior:
         A = sorted(d for d, _ in P.H[p])
         print('vertex %d at (%.4f, %.4f), rays %s' % (p, *P.V[p], ', '.join('%.4f' % math.degrees(a) for a in A)), flush=True)
-        k, h = min_history(A, kmax, log=lambda s: print(s, flush=True))
+        k, h = min_history(A, kmax, log=lambda s: print(s, flush=True), seconds=secs)
+        if k == 'undecided': print('  undecided at k=%d' % h, flush=True); continue
         print('  minimum %s hidden rays%s' % (k if k is not None else '> %d' % kmax,
               '' if h is None else ': ' + h[0] + ('' if h[1] is None else '   [float check FAILED: %s]' % h[1])), flush=True)
 

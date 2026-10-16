@@ -44,8 +44,9 @@ for c, title in groups:
     g = [d for d in rows if cls(d) == c]
     lines.append('\\midrule\\multicolumn{6}{l}{\\emph{%s} (%d)}\\\\' % (title, len(g)))
     for d in g:
+        star = '' if c == 'U' or d.get('certified_minimal') else '$^*$'
         lines.append('%s & %s & %s & %s & %s \\\\' % (short(d['file']), d.get('interior') if d.get('interior') is not None else '',
-                     unit(d), d.get('hidden', '') if c != 'U' else '', len(d.get('collapses') or []) if c != 'U' else ''))
+                     unit(d), (str(d.get('hidden', '')) + star) if c != 'U' else '', len(d.get('collapses') or []) if c != 'U' else ''))
 (out / 'corpus_rows.tex').write_text('\n'.join(lines) + '\n')
 
 # crossover TikZ
