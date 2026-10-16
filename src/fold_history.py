@@ -1,6 +1,9 @@
 """Structure identification by local fold histories, for crease patterns in FOLD format.
 
-Usage: python3 src/fold_history.py [--out=PREFIX] [--budget=SECONDS] [--tol=RADIANS] [--triage] pattern.fold
+Usage: python3 src/fold_history.py [--out=PREFIX] [--budget=SECONDS] [--tol=RADIANS] [--triage]
+                                   [--geometry=shortest|found] pattern.fold
+The analysis fixes the minimal geometry whose cancelled segments are shortest (default), or the one
+the solver found.
 
 Moves (shadow model: a flat folded state is a map that reflects across every crease):
   single-line fold   new creases at a vertex are preimages of one fold line under the current
@@ -610,6 +613,39 @@ def analyse(P, res, log=print, pin=True, budget=3600, scope='geometry'):
     return folds, lt, val, paths
 
 
+def segments(P, M, m, choice):
+    """The cancelled segments of model m, as a set of edges between rounded points."""
+    E = set()
+    for p, R in choice.items():
+        for r in R:
+            pts, _ = walk(P, M, m, P.V[p], r, (p, r), p, None)
+            for a, b in zip(pts, pts[1:]):
+                E.add(frozenset(((round(a[0], 6), round(a[1], 6)), (round(b[0], 6), round(b[1], 6)))))
+    return E
+
+
+def geometries(P, res, cap=1000, budget=1800):
+    """Minimal-cost geometries within the search space: dicts with the model m, the hidden
+    directions (choice), a hashable selection, and the total length of the segments.  Stops after
+    cap geometries or budget seconds; the second value says whether the list is complete."""
+    M, opts = res['model'], res['opts']; s = M.s; out = []; t0 = time.time(); r = None
+    s.push(); s.add(M.cost() == res['cost'])
+    while len(out) < cap:
+        s.set('timeout', max(1, int(1000 * (budget - (time.time() - t0)))))
+        r = s.check(list(M.track))
+        if r != z3.sat: break
+        m = s.model()
+        if refine(P, M, opts, m, [s]): continue
+        on = [(p, i) for (p, i), b in M.sel.items() if z3.is_true(m.eval(b))]
+        choice = {p: opts[p][i][0] for p, i in on if opts[p][i][0]}
+        E = segments(P, M, m, choice)
+        out.append({'m': m, 'choice': choice, 'length': sum(math.dist(*tuple(e)) for e in E),
+                    'selection': frozenset((p, tuple(P.deg(r) for r in R)) for p, R in choice.items())})
+        s.add(z3.Not(z3.And([M.sel[k] for k in on] + [M.geometry(choice, m)])))
+    s.pop()
+    return out, r == z3.unsat
+
+
 def reduce(nodes, lt):
     succ = {x: {b for a, b in lt if a == x} for x in nodes}
     return {(a, b) for a, b in lt if not any(b in succ[c] for c in succ[a] if c != b)}
@@ -734,9 +770,10 @@ def report(P, folds, lt, paths, collapsed, out):
 
 
 def main(argv):
-    out, budget, tols, analyse_it = None, 300.0, (1e-6, 1e-4, 5e-4, 2e-3), True
+    out, budget, tols, analyse_it, geometry = None, 300.0, (1e-6, 1e-4, 5e-4, 2e-3), True, 'shortest'
     args = []
     for a in argv:
+        if a.startswith('--geometry='): geometry = a[11:]; continue
         if a.startswith('--out='): out = a[6:]
         elif a.startswith('--budget='): budget = float(a[9:])
         elif a.startswith('--tol='): tols = (float(a[6:]),)
@@ -756,7 +793,15 @@ def main(argv):
     for k in ('hidden', 'excess_lines', 'collapses', 'cost', 'lower_bound', 'certified_minimal', 'rounds', 'lazy_refinements', 'expanded', 'core', 'first'):
         if k in res: summary[k] = res[k]
     if res['status'] == 'ok' and analyse_it:
-        folds, lt, val, paths = analyse(P, res)
+        if geometry == 'shortest' and res['choice']:
+            G, complete = geometries(P, res, budget=budget)
+            summary.update(minimal_geometries=len(G), geometries_complete=complete)
+            if complete:
+                g = min(G, key=lambda g: g['length'])
+                res = dict(res, m=g['m'], choice=g['choice'])
+            else: summary['geometry'] = 'found (the minimal geometries were not all enumerated)'
+        folds, lt, val, paths = analyse(P, res, budget=budget)
+        summary['analysis_unknown'] = res['analysis_unknown']
         for (p, r), (pts, how) in sorted(paths.items(), key=lambda kv: (kv[0][0], kv[0][1])):
             print('  hidden from %d at %.2f deg: %s, %s' % (p, P.deg(r), ' -> '.join('(%.3f, %.3f)' % q for q in pts), how))
         summary.update(report(P, folds, lt, paths, res['collapses'], out or path.split('/')[-1].rsplit('.', 1)[0]))
