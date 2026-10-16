@@ -17,7 +17,7 @@ lazily for collisions.  Vertices get more hidden pairs or collapses only when th
 unsatisfiable core.  Output: the folds (creases forced to be simultaneous in every solution of the
 chosen resolution), the forced order between folds, and its Hasse diagram.
 """
-import json, math, sys, itertools, subprocess, time
+import json, math, sys, itertools, shutil, subprocess, time
 import z3
 
 TWO_PI = 2 * math.pi
@@ -81,8 +81,9 @@ def collision_free(S, switch, phis, line):
     return True
 
 def histories(items, limit=20000):
-    """items: (direction, key, kind); see fold_history.histories."""
-    by = {k: (d, kind) for d, k, kind in items}; res = []
+    """Single-line local histories of the visible rays items = [(direction, key)], with no hidden
+    rays: every weak order whose classes, in order, are steps satisfying (P), (L) and (C)."""
+    by = dict((k, d) for d, k in items); res = []
     def rec(S, rem, hist):
         if len(res) >= limit: return
         if not rem: res.append(tuple(hist)); return
@@ -90,21 +91,15 @@ def histories(items, limit=20000):
         if phis is None: return
         cand = {}
         for k in rem:
-            d, kind = by[k]
-            if kind == 'hid2' and (k[0], 1) in rem: continue
-            img = apply(phis[sector_of(d, S)], d)
+            img = apply(phis[sector_of(by[k], S)], by[k])
             cand.setdefault(linekey(img), (img % math.pi, []))[1].append(k)
         for key, (line, ks) in cand.items():
             for size in range(2, len(ks) + 1, 2):
                 for T in itertools.combinations(ks, size):
-                    dirs = [by[k][0] for k in T]
-                    if any(eq(a, b) for a, b in itertools.combinations(dirs, 2)): continue
+                    dirs = [by[k] for k in T]
                     if not collision_free(S, dirs, phis, line): continue
-                    add = [by[k][0] for k in T if by[k][1] != 'hid2']
-                    rmv = [by[k][0] for k in T if by[k][1] == 'hid2']
-                    S2 = sorted([x for x in S if not any(eq(x, y) for y in rmv)] + add)
-                    hist.append(frozenset(T)); rec(S2, rem - set(T), hist); hist.pop()
-    rec([], frozenset(k for _, k, _ in items), [])
+                    hist.append(frozenset(T)); rec(sorted(S + dirs), rem - set(T), hist); hist.pop()
+    rec([], frozenset(k for _, k in items), [])
     return res
 
 
@@ -153,26 +148,6 @@ class Pattern:
 
     def deg(self, r): return round(math.degrees(r) % 360, 3)
 
-    def candidates(self, p):
-        """Hidden directions worth trying at p: antipodes, reflections and bisectors of the
-        directions at p, closed once more under reflection."""
-        D = [t for t, _ in self.H[p]]
-        C = set()
-        def add(x):
-            x = nrm(x)
-            if not any(eq(x, y) for y in D) and not any(eq(x, y) for y in C): C.add(x)
-        for a in D: add(a + math.pi)
-        for a, b in itertools.permutations(D, 2):
-            add(2 * a - b)
-            add((a + b) / 2 + (0 if ((b - a) % TWO_PI) < math.pi else math.pi)); add((a + b) / 2)
-        C1 = list(C)
-        for c in D:
-            for x in C1: add(2 * c - x)
-        if self.N:
-            u = TWO_PI / self.N
-            C = {x for x in C if abs(x / u - round(x / u)) < 1e-6 or True}
-        return sorted(C)
-
     def trace(self, o, r, skip_v=None, skip_c=None):
         V = self.V; dv = (math.cos(r), math.sin(r))
         def hit(a, b):
@@ -208,18 +183,26 @@ class Pattern:
                                            (o[0] + t * dv[0], o[1] + t * dv[1]), zd)
         return [ev[k] for k in sorted(ev)], (o[0] + tb * dv[0], o[1] + tb * dv[1])
 
-    def options(self, p, k):
-        """Options with exactly k hidden pairs at p."""
-        base = [(d, e, 'real') for d, e in self.H[p]]
-        if k == 0:
-            hs = histories(base)
-            return [((), hs)] if hs else []
+    def options(self, p, k, c=0):
+        """Options at p with k hidden rays and c collapse steps: [(R, histories or 'LAZY', collapse cost)],
+        R the tuple of hidden directions."""
+        reals = [(d, e) for d, e in self.H[p]]
+        if k == 0 and c == 0:
+            lim = LAZY_T if self.N else LAZY_T_REAL    # the symbolic encoding is slow without a unit
+            hs = histories(reals, limit=lim + 1)
+            if len(hs) > lim: return [((), 'LAZY', 0)]
+            return [((), hs, 0)] if hs else []
+        res = lazy_histories(p, reals, k, c)
         out = []
-        for R in itertools.combinations(self.candidates(p), k):
+        for (R, gc), hs in sorted(res.items(), key=lambda kv: kv[0][1]):
             if any(self.trace(self.V[p], r) is None for r in R): continue
-            items = base + [x for r in R for x in ((r, ((p, r), 1), 'hid1'), (r, ((p, r), 2), 'hid2'))]
-            hs = histories(items)
-            if hs: out.append((R, hs))
+            # rename hidden keys to ((p, r), i) with r the float direction used in R
+            def ren(key):
+                if isinstance(key, tuple) and len(key) == 2 and isinstance(key[0], tuple):
+                    r = [x for x in R if abs(round(math.degrees(x), 6) - key[0][1]) < 1e-5][0]
+                    return ((p, r), key[1])
+                return key
+            out.append((R, [tuple(frozenset(ren(x) for x in st) for st in h) for h in hs], gc))
         return out
 
 
@@ -302,7 +285,10 @@ class Model:
         return [z3.And(self.sel[w, i], h1 == self.t(((w, Rw[j]), 1)), h2 == self.t(((w, Rw[j]), 2)))
                 for i, (Rw, *_) in enumerate(self.opts.get(w, [])) for j in range(len(Rw)) if eq(Rw[j], r2)]
 
-    def path(self, o, r, depth, h1, h2, skip_v, skip_c):
+    def path(self, o, r, depth, h1, h2, skip_v, skip_c, m=None):
+        """The cancelled segment leaving o in direction r, with creases at times h1 < h2, has a
+        valid path.  Given a model m, only the branch that m takes (its first true one): this pins
+        the segment's path, bends and endpoint."""
         P = self.P
         tr = P.trace(o, r, skip_v, skip_c)
         if tr is None: return z3.BoolVal(False)
@@ -312,14 +298,21 @@ class Model:
                 if e[2]: continue
                 z = self.t(e[1])
                 if depth < MAXBEND:
-                    terms.append(z3.And(pre + [z < h1, self.path(e[3], nrm(2 * e[4] - r - math.pi), depth + 1, h1, h2, None, e[1])]))
+                    terms.append(z3.And(pre + [z < h1, self.path(e[3], nrm(2 * e[4] - r - math.pi), depth + 1, h1, h2, None, e[1], m)]))
                 pre = pre + [z > h2]
             elif e[0] == 'v':
                 terms += [z3.And(pre + [j]) for j in self.joins(e[1], nrm(r + math.pi), h1, h2)]
                 pre = pre + [self.t(z) > h2 for z, perp in e[2] if not perp]
             else:
                 pre = pre + [self.t(e[1]) > h2]
-        return z3.Or(terms + [z3.And(pre)])
+        terms.append(z3.And(pre))
+        if m is None: return z3.Or(terms)
+        return next((c for c in terms if z3.is_true(m.eval(c, model_completion=True))), z3.BoolVal(False))
+
+    def geometry(self, choice, m):
+        """The cancelled segments of model m, pinned: every hidden ray takes the path it takes in m."""
+        return z3.And([self.path(self.P.V[p], r, 0, self.t(((p, r), 1)), self.t(((p, r), 2)), p, None, m)
+                       for p, R in choice.items() for r in R])
 
     def cost(self):
         return z3.Sum([z3.IntVal(0)] + [z3.If(self.sel[p, i], len(o[0]) + W_COLLAPSE * o[2], 0) for p, ol in self.opts.items() for i, o in enumerate(ol)])
@@ -379,30 +372,36 @@ def refine(P, M, opts, m, sinks):
 
 W_COLLAPSE = 100
 LAZY_T = 2000
+LAZY_T_REAL = 20000
 MAXC = 1
 
 def levels(kmax=MAXK):
     return [(c, k) for c in range(MAXC + 1) for k in range(kmax + 1)]
 
-def solve(P, log=print, budget=600, maxlevel=2):
-    """Core-guided expansion: each vertex starts with its cheapest options; vertices in an
-    unsat core get the next hidden-pair count, up to MAXK (and at most maxlevel above minimum)."""
+def solve(P, log=print, budget=600):
+    """Core-guided expansion over the levels (c, k) = (collapse steps, hidden rays), c <= MAXC and
+    k <= MAXK, in lexicographic order.  Each vertex starts at its first level with an option; a
+    vertex in an unsat core is given the options of its next level.  The cost is then minimised over
+    the options given so far.  lower_bound (each vertex at its first level, a collapse step costing
+    at least 1) is a lower bound over the whole search space, so cost == lower_bound certifies that
+    the minimum found is the minimum over the search space."""
     t0 = time.time()
     LV = levels(); level, kmin, opts, ladder = {}, {}, {}, {}
     for p in P.interior:
         for li, (c, k) in enumerate(LV):
             o = P.options(p, k, c)
             if o:
-                kmin[p] = li; level[p] = 0; opts[p] = list(o)
-                ladder[p] = [(c, k)] + [(c, kk) for kk in range(k + 1, min(k + maxlevel, MAXK) + 1)] + \
-                            ([(1, kk) for kk in range(0, 2)] if c == 0 else [(1, kk) for kk in range(k + 1, k + 2)])
+                kmin[p] = li; level[p] = 0; opts[p] = list(o); ladder[p] = LV[li:]
                 break
         else:
             return {'status': 'local fail', 'first': p}
+    lower = sum(k + W_COLLAPSE * c for c, k in (LV[kmin[p]] for p in P.interior))
+    left = lambda: max(1, int(1000 * (budget - (time.time() - t0))))   # ms; every z3 call is bounded
     rounds = 0; lazy_rounds = [0]; rebuild = True
     while True:
         if rebuild:
             rounds += 1; M = Model(P, opts); rebuild = False
+        M.s.set('timeout', left())
         r = M.s.check(list(M.track))
         if r == z3.sat:
             learned = refine(P, M, opts, M.s.model(), [M.s])
@@ -411,7 +410,8 @@ def solve(P, log=print, budget=600, maxlevel=2):
             lazy_rounds[0] += 1
             if time.time() - t0 > budget: return {'status': 'timeout', 'rounds': rounds}
             continue
-        if r != z3.sat and r != z3.unsat: return {'status': 'unknown'}
+        if r != z3.sat and r != z3.unsat:
+            return {'status': 'timeout' if time.time() - t0 >= budget else 'unknown', 'rounds': rounds}
         core = [M.track[c] for c in M.s.unsat_core()]
         grown = []
         for p in core:
@@ -426,7 +426,9 @@ def solve(P, log=print, budget=600, maxlevel=2):
     o = z3.Optimize(); o.add(M.s.assertions()); o.add(list(M.track))
     c = M.cost(); o.minimize(c)
     while True:
-        o.check(); m = o.model()
+        o.set('timeout', left())
+        if o.check() != z3.sat: return {'status': 'timeout', 'rounds': rounds}
+        m = o.model()
         if not refine(P, M, opts, m, [o, M.s]): break
         lazy_rounds[0] += 1
     ch = {p: opts[p][i][0] for (p, i), b in M.sel.items() if opts[p][i][0] and z3.is_true(m.eval(b))}
@@ -434,6 +436,7 @@ def solve(P, log=print, budget=600, maxlevel=2):
     cv = m.eval(c).as_long()
     gsum = sum(opts[p][i][2] for (p, i), b in M.sel.items() if z3.is_true(m.eval(b)))
     return {'status': 'ok', 'model': M, 'opts': opts, 'choice': ch, 'hidden': cv % W_COLLAPSE, 'collapses': col, 'excess_lines': gsum, 'm': m,
+            'cost': cv, 'lower_bound': lower, 'certified_minimal': cv == lower,
             'rounds': rounds, 'lazy_refinements': lazy_rounds[0], 'expanded': sorted(p for p in level if level[p] > 0),
             'defects': sorted(p for p in kmin if kmin[p] > 0)}
 
@@ -489,7 +492,7 @@ def lazy_histories(p, reals, k, ctarget=0, limit=20000):
                     if (between(x, a, b) if S else True):
                         rk = [key for d, key in remdir if eq(d, x)]
                         if rk: cand.append((x, 'real', rk[0]))
-                        elif used < k: cand.append((x, 'new', None))
+                        elif used < k and not any(eq(x, y) for y in used_dirs): cand.append((x, 'new', None))
             for x in alive:
                 if linekey(apply(phis[sector_of(x, S)], x)) == lk: cand.append((x, 'cancel', None))
             # dedupe by direction
@@ -522,35 +525,20 @@ def lazy_histories(p, reals, k, ctarget=0, limit=20000):
     rec([], {}, frozenset(key for _, key in reals), [], 0, [])
     return out
 
-def lazy_options(self, p, k, c=0):
-    reals = [(d, e) for d, e in self.H[p]]
-    if k == 0 and c == 0:
-        hs = histories([(d, e, 'real') for d, e in reals], limit=LAZY_T + 1)
-        if len(hs) > LAZY_T: return [((), 'LAZY', 0)]
-        return [((), hs, 0)] if hs else []
-    res = lazy_histories(p, reals, k, c)
-    out = []
-    for (R, gc), hs in sorted(res.items(), key=lambda kv: kv[0][1]):
-        if any(self.trace(self.V[p], r) is None for r in R): continue
-        # rename hidden keys to ((p, r), i) with r the float direction used in R
-        def ren(key):
-            if isinstance(key, tuple) and len(key) == 2 and isinstance(key[0], tuple):
-                r = [x for x in R if abs(round(math.degrees(x), 6) - key[0][1]) < 1e-5][0]
-                return ((p, r), key[1])
-            return key
-        out.append((R, [tuple(frozenset(ren(x) for x in st) for st in h) for h in hs], gc))
-    return out
-Pattern.options = lazy_options
 
 
 # ---------------------------------------------------------------- analysis of the chosen resolution
 class Checker:
-    """Satisfiability under the fixed resolution, with lazy vertices refined until the model is valid."""
-    def __init__(self, P, res):
+    """Satisfiability under the fixed geometry, with lazy vertices refined until the model is valid.
+    The geometry is the option chosen at every vertex and, if pin, the path of every cancelled segment."""
+    def __init__(self, P, res, pin=True, budget=3600):
         self.P, self.M, self.opts = P, res['model'], res['opts']
+        self.deadline = time.time() + budget; self.unknown = 0
         M, m = self.M, res['m']
         self.s = M.s
         self.base = list(M.track) + [b if z3.is_true(m.eval(b)) else z3.Not(b) for b in M.sel.values()]
+        if pin:
+            g = z3.Bool('geometry'); self.s.add(z3.Implies(g, M.geometry(res['choice'], m))); self.base.append(g)
         self.n = 0
 
     def check(self, extra=None):
@@ -558,8 +546,10 @@ class Checker:
         if extra is not None:
             self.n += 1; a = z3.Bool('q%d' % self.n); self.s.add(z3.Implies(a, extra)); lits.append(a)
         while True:
+            self.s.set('timeout', max(1, int(1000 * (self.deadline - time.time()))))
             r = self.s.check(lits)
-            if r != z3.sat: return None
+            if r == z3.unsat: return None
+            if r != z3.sat: self.unknown += 1; return 'unknown'
             m = self.s.model()
             if not refine(self.P, self.M, self.opts, m, [self.s]): return m
 
@@ -577,9 +567,13 @@ def walk(P, M, m, o, r, k1, skip_v, skip_c, depth=0):
     return [o, end], 'boundary'
 
 
-def analyse(P, res, log=print):
-    C = Checker(P, res); M = C.M
+def analyse(P, res, log=print, pin=True, budget=3600):
+    """Folds and forced order under the fixed geometry.  A query that z3 cannot decide within the
+    budget counts as not proven, so the folds may be finer and the order smaller, never wrong;
+    res['analysis_unknown'] is the number of such queries."""
+    C = Checker(P, res, pin, budget); M = C.M
     m = C.check()
+    if not isinstance(m, z3.ModelRef): raise RuntimeError('analysis: the fixed geometry is not confirmed satisfiable')
     keys = list(range(len(P.crease))) + [((p, r), i) for p, R in res['choice'].items() for r in R for i in (1, 2)]
     val = {k: m.eval(M.t(k), model_completion=True).as_long() for k in keys}
     par = {k: k for k in keys}
@@ -599,10 +593,11 @@ def analyse(P, res, log=print):
         x, y = cand.pop()
         m2 = C.check(M.t(y) <= M.t(x))
         if m2 is None: lt.add((x, y))
-        else:
+        elif not isinstance(m2, str):
             v2 = {k: m2.eval(M.t(k), model_completion=True).as_long() for k in reps}
             cand = {(a, b) for a, b in cand if v2[a] < v2[b]}
     paths = {(p, r): walk(P, M, m, P.V[p], r, (p, r), p, None) for p, R in res['choice'].items() for r in R}
+    res['analysis_unknown'] = C.unknown
     return folds, lt, val, paths
 
 
@@ -703,7 +698,20 @@ def report(P, folds, lt, paths, collapsed, out):
         lines.append('"%s" -> "%s";' % (label[a], label[b]))
     lines.append('}')
     open(out + '_hasse.dot', 'w').write('\n'.join(lines))
-    subprocess.run(['neato', '-n2', '-Tpng', '-Gdpi=100', out + '_hasse.dot', '-o', out + '_hasse.png'], check=True)
+    if shutil.which('neato'):
+        subprocess.run(['neato', '-n2', '-Tpng', '-Gdpi=100', out + '_hasse.dot', '-o', out + '_hasse.png'], check=True)
+    else:                                   # no Graphviz: the same layout, with straight arrows
+        fig, ax = plt.subplots(figsize=(max(6, 0.75 * 16), max(3, 1.1 * (D + 1))))
+        for a, b in hasse:
+            ax.annotate('', xy=pos[b], xytext=pos[a], arrowprops=dict(arrowstyle='-|>', color='#555555', lw=0.7,
+                        shrinkA=9, shrinkB=9, mutation_scale=8))
+        for x in reps:
+            ax.text(*pos[x], label[x], ha='center', va='center', fontsize=8, color=txt[x], zorder=3,
+                    bbox=dict(boxstyle='circle,pad=0.3', fc=col[x], ec='crimson' if x in hidden_only else 'k',
+                              lw=1.6 if x in hidden_only else 0.8))
+        ax.set_xlim(min(p[0] for p in pos.values()) - 0.6, max(p[0] for p in pos.values()) + 0.6)
+        ax.set_ylim(-D * 1.25 - 0.6, 0.6); ax.axis('off')
+        plt.savefig(out + '_hasse.png', dpi=100, bbox_inches='tight'); plt.close(fig)
     with open(out + '_folds.txt', 'w') as f:
         f.write('label depth  creases (id+assignment; hN@deg#1/2 = first/cancelling hidden crease from vertex N)\n')
         for x in order:
@@ -736,7 +744,7 @@ def main(argv):
         summary.update(status='not flat-foldable', vertices=notflat); print(json.dumps(summary)); return
     res = solve(P, log=lambda s: None if analyse_it is False else print(s, flush=True), budget=budget)
     summary['status'] = res['status']
-    for k in ('hidden', 'excess_lines', 'collapses', 'rounds', 'lazy_refinements', 'expanded', 'core', 'first'):
+    for k in ('hidden', 'excess_lines', 'collapses', 'cost', 'lower_bound', 'certified_minimal', 'rounds', 'lazy_refinements', 'expanded', 'core', 'first'):
         if k in res: summary[k] = res[k]
     if res['status'] == 'ok' and analyse_it:
         folds, lt, val, paths = analyse(P, res)

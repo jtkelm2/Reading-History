@@ -1,3 +1,4 @@
-z3-solver>=4.12
-networkx>=3.0
-matplotlib>=3.7
+# Versions the results were computed with (Python 3.14).  z3 5.3.1 also passes the quick checks.
+z3-solver==4.16.0.0
+networkx==3.7
+matplotlib==3.11.2
