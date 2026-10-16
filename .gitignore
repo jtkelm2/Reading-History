@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+build/
+data/
+out/
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.toc
+*_folds.png
+*_hasse.png
+*_hasse.dot
+*_folds.txt
+!paper/dragon_hasse.png

@@ -1,0 +1,26 @@
+    lazy 0 learned 0 {} (4s)
+  hidden from 26 at 292.50 deg: (0.104, 0.104) -> (0.146, 0.000), boundary
+  hidden from 34 at 22.50 deg: (0.146, 0.207) -> (0.250, 0.250) -> (0.293, 0.354), joins vertex 51
+  hidden from 40 at 67.50 deg: (0.177, 0.073) -> (0.189, 0.104) -> (0.177, 0.134), joins vertex 41
+  hidden from 41 at 292.50 deg: (0.177, 0.134) -> (0.189, 0.104) -> (0.177, 0.073), joins vertex 40
+  hidden from 47 at 0.00 deg: (0.250, 0.896) -> (0.396, 0.896) -> (0.396, 0.750), joins vertex 62
+  hidden from 47 at 337.50 deg: (0.250, 0.896) -> (0.354, 0.854) -> (0.396, 0.750), joins vertex 62
+  hidden from 51 at 67.50 deg: (0.293, 0.354) -> (0.354, 0.500) -> (0.250, 0.750) -> (0.000, 0.854), boundary
+  hidden from 51 at 247.50 deg: (0.293, 0.354) -> (0.250, 0.250) -> (0.146, 0.207), joins vertex 34
+  hidden from 57 at 270.00 deg: (0.396, 0.043) -> (0.396, 0.000), boundary
+  hidden from 62 at 90.00 deg: (0.396, 0.750) -> (0.396, 0.896) -> (0.250, 0.896), joins vertex 47
+  hidden from 62 at 112.50 deg: (0.396, 0.750) -> (0.354, 0.854) -> (0.250, 0.896), joins vertex 47
+  hidden from 64 at 0.00 deg: (0.457, 0.104) -> (0.543, 0.104), joins vertex 72
+  hidden from 72 at 180.00 deg: (0.543, 0.104) -> (0.457, 0.104), joins vertex 64
+  hidden from 74 at 270.00 deg: (0.604, 0.043) -> (0.604, 0.000), boundary
+  hidden from 79 at 67.50 deg: (0.604, 0.750) -> (0.646, 0.854) -> (0.750, 0.896), joins vertex 90
+  hidden from 79 at 90.00 deg: (0.604, 0.750) -> (0.604, 0.896) -> (0.750, 0.896), joins vertex 90
+  hidden from 83 at 112.50 deg: (0.707, 0.354) -> (0.646, 0.500) -> (0.750, 0.750) -> (1.000, 0.854), boundary
+  hidden from 83 at 292.50 deg: (0.707, 0.354) -> (0.750, 0.250) -> (0.854, 0.207), joins vertex 99
+  hidden from 90 at 180.00 deg: (0.750, 0.896) -> (0.604, 0.896) -> (0.604, 0.750), joins vertex 79
+  hidden from 90 at 202.50 deg: (0.750, 0.896) -> (0.646, 0.854) -> (0.604, 0.750), joins vertex 79
+  hidden from 95 at 112.50 deg: (0.823, 0.073) -> (0.811, 0.104) -> (0.823, 0.134), joins vertex 96
+  hidden from 96 at 247.50 deg: (0.823, 0.134) -> (0.811, 0.104) -> (0.823, 0.073), joins vertex 95
+  hidden from 99 at 157.50 deg: (0.854, 0.207) -> (0.750, 0.250) -> (0.707, 0.354), joins vertex 83
+  hidden from 105 at 247.50 deg: (0.896, 0.104) -> (0.854, 0.000), boundary
+{"file": "dragon.fold", "tol": 1e-06, "N": 16, "creases": 278, "interior": 103, "status": "ok", "hidden": 24, "excess_lines": 0, "collapses": [], "rounds": 1, "lazy_refinements": 0, "expanded": [], "folds": 80, "hidden_only": 2, "relations": 814, "hasse_edges": 115, "depth": 7, "mirror_symmetric": true, "isolated": ["2", "2'", "5", "5'", "8", "8'"], "t": 117.0}
