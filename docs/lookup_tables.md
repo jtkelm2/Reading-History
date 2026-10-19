@@ -141,3 +141,26 @@ and bottom layers. That is an inside or an outside reverse fold. A rigid half-tu
 of layers above or below the staying ones, so it cannot do either. Cancellation in the tables is
 mostly of this kind, so rigidity as defined in flatvertex rejects it. Using rigidity as a filter
 needs a layered model of reverse folds first.
+
+## Reverse folds
+
+`src/rigid.py` now gives every moving piece a sense (the side it is lifted over); each moving run
+keeps the common sense or is split at one spine into halves with opposite senses. With all senses
+equal this is flatvertex's rigid half-turn. The definitions, lemmas and computed examples are in
+flatvertex.tex, Section 3 (`tools/verify_flatvertex.py` asserts every computed claim there).
+
+Survey with reverse folds (`tools/rigid_survey.py tables --reverse …`,
+`results/lookup_first_build/rigid_survey_reverse.jsonl`; 723 s):
+
+| hidden rays k | 0 | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|---|
+| histories in the tables | 54 | 111 | 608 | 3418 | 655 |
+| realizable, half-turns only | 49 | 0 | 10 | 0 | 0 |
+| realizable with reverse folds | 54 | 76 | 301 | 866 | 130 |
+
+Shapes with no realizable history within the tables: 22 with half-turns only, 2 with reverse folds:
+(22.5, 90, 157.5, 90), the Horned Owl's staircase vertex, and (67.5, 90, 112.5, 90). For 5 shapes the
+least number of hidden rays rises. With `--table=tables --rigid=reverse`, the running and body
+patterns resolve with the same folds and forced order as without the filter (15 folds, 30 relations,
+19 Hasse edges; 6 folds, 9 relations, 24 linear extensions); the check takes 86 s and 26 s, because
+realizability is decided at runtime by a search over labelings, up sides and senses.

@@ -1,0 +1,67 @@
+{"file": "example1_running.fold", "vertex": 1, "sectors": [67.5, 67.5, 112.5, 112.5], "by_k": {"0": [1, 1], "3": [6, 0], "4": [82, 6]}, "seconds": 5.76}
+{"file": "example1_running.fold", "vertex": 4, "sectors": [45.0, 45.0, 135.0, 135.0], "by_k": {"0": [1, 1], "2": [2, 0], "3": [28, 8], "4": [76, 28]}, "seconds": 18.07}
+{"file": "example1_running.fold", "vertex": 6, "sectors": [11.25, 11.25, 168.75, 168.75], "by_k": {"0": [1, 1]}, "seconds": 0.0}
+{"file": "example1_running.fold", "vertex": 8, "sectors": [45.0, 45.0, 67.5, 67.5, 67.5, 67.5], "by_k": {"0": [2, 2], "2": [20, 4], "3": [240, 58]}, "seconds": 48.7}
+{"file": "example1_running.fold", "vertex": 13, "sectors": [22.5, 22.5, 157.5, 157.5], "by_k": {"0": [1, 1]}, "seconds": 0.01}
+{"file": "example1_running.fold", "vertex": 14, "sectors": [33.75, 33.75, 33.75, 33.75, 112.5, 112.5], "by_k": {"0": [2, 2], "1": [2, 0], "2": [5, 1], "3": [10, 0]}, "seconds": 0.76}
+{"file": "example1_running.fold", "vertex": 15, "sectors": [73.125, 73.125, 106.875, 106.875], "by_k": {"0": [1, 1]}, "seconds": 0.0}
+{"file": "example1_running.fold", "vertex": 20, "sectors": [90.0, 90.0, 90.0, 90.0], "by_k": {"0": [2, 2]}, "seconds": 0.0}
+{"file": "example1_running.fold", "vertex": 31, "sectors": [56.25, 56.25, 123.75, 123.75], "by_k": {"0": [1, 1]}, "seconds": 0.0}
+{"file": "example1_running.fold", "vertex": 34, "sectors": [16.875, 73.125, 73.125, 16.875, 90.0, 90.0], "by_k": {"0": [3, 3], "1": [8, 8], "2": [21, 15]}, "seconds": 0.59}
+{"file": "example1_running.fold", "vertex": 45, "sectors": [45.0, 67.5, 135.0, 112.5], "by_k": {"1": [1, 1], "2": [5, 3], "3": [16, 1], "4": [86, 4]}, "seconds": 11.79}
+{"file": "example2_body.fold", "vertex": 0, "sectors": [45.0, 45.0, 90.0, 45.0, 45.0, 90.0], "by_k": {"0": [2, 2], "1": [12, 4], "2": [30, 12]}, "seconds": 6.27}
+{"file": "example2_body.fold", "vertex": 1, "sectors": [45.0, 90.0, 135.0, 90.0], "by_k": {"1": [2, 2], "2": [10, 10], "3": [28, 26], "4": [80, 60]}, "seconds": 3.26}
+{"file": "komatsu_gentle_dragon.fold", "vertex": 26, "sectors": [22.5, 22.5, 45.0, 45.0, 112.5, 112.5], "by_k": {"1": [5, 4], "2": [32, 13], "3": [126, 22]}, "seconds": 26.88}
+{"file": "komatsu_gentle_dragon.fold", "vertex": 29, "sectors": [22.5, 22.5, 22.5, 22.5, 135.0, 135.0], "by_k": {"0": [2, 2], "1": [2, 0], "2": [7, 1], "3": [72, 20]}, "seconds": 7.27}
+{"file": "komatsu_gentle_dragon.fold", "vertex": 35, "sectors": [45.0, 45.0, 45.0, 45.0, 90.0, 90.0], "by_k": {"0": [3, 3], "1": [12, 12], "2": [48, 44]}, "seconds": 0.88}
+{"file": "komatsu_gentle_dragon.fold", "vertex": 47, "sectors": [22.5, 67.5, 157.5, 112.5], "by_k": {"2": [1, 0], "3": [14, 1], "4": [49, 4]}, "seconds": 6.87}
+{"file": "komatsu_gentle_dragon.fold", "vertex": 51, "sectors": [22.5, 22.5, 67.5, 67.5, 90.0, 90.0], "by_k": {"2": [5, 0], "3": [130, 5]}, "seconds": 26.82}
+{"file": "002_traditional_Kabuto.fold", "vertex": 3, "sectors": [22.5, 22.5, 67.5, 90.0, 90.0, 67.5], "by_k": {"0": [3, 3], "1": [6, 6], "2": [22, 14], "3": [86, 34]}, "seconds": 9.67}
+{"file": "004_traditional_Crane.fold", "vertex": 3, "sectors": [78.75, 78.75, 101.25, 101.25], "by_k": {"0": [1, 1]}, "seconds": 0.0}
+{"file": "004_traditional_Crane.fold", "vertex": 4, "sectors": [180.0, 180.0], "by_k": {"0": [1, 1]}, "seconds": 0.0}
+{"file": "004_traditional_Crane.fold", "vertex": 5, "sectors": [33.75, 33.75, 146.25, 146.25], "by_k": {"0": [1, 1]}, "seconds": 0.0}
+{"file": "015_ku_Iso-Area_Half_Square.fold", "vertex": 5, "sectors": [18.435, 18.435, 71.565, 71.565, 90.0, 90.0], "by_k": {}, "seconds": 0.02}
+{"file": "015_ku_Iso-Area_Half_Square.fold", "vertex": 8, "sectors": [76.717, 76.717, 103.283, 103.283], "by_k": {"0": [1, 1]}, "seconds": 0.0}
+{"file": "015_ku_Iso-Area_Half_Square.fold", "vertex": 11, "sectors": [24.095, 58.283, 155.905, 121.717], "by_k": {}, "seconds": 0.0}
+{"file": "015_ku_Iso-Area_Half_Square.fold", "vertex": 12, "sectors": [84.34, 84.34, 95.66, 95.66], "by_k": {"0": [1, 1]}, "seconds": 0.0}
+{"file": "018_komatsu_Butterfly_Base.fold", "vertex": 11, "sectors": [22.5, 90.0, 157.5, 90.0], "by_k": {"3": [2, 0], "4": [44, 0]}, "seconds": 3.77}
+{"file": "018_komatsu_Butterfly_Base.fold", "vertex": 24, "sectors": [22.5, 45.0, 112.5, 67.5, 45.0, 67.5], "by_k": {"1": [6, 2], "2": [22, 9], "3": [113, 29]}, "seconds": 14.28}
+{"file": "018_komatsu_Butterfly_Base.fold", "vertex": 29, "sectors": [22.5, 45.0, 45.0, 22.5, 112.5, 112.5], "by_k": {"0": [2, 2], "1": [4, 2], "2": [16, 4], "3": [94, 18]}, "seconds": 11.15}
+{"file": "018_komatsu_Butterfly_Base.fold", "vertex": 39, "sectors": [22.5, 22.5, 22.5, 45.0, 135.0, 112.5], "by_k": {"0": [1, 1], "1": [5, 3], "2": [29, 12], "3": [190, 52]}, "seconds": 40.47}
+{"file": "026_furutaoripa_orihazuru.fold", "vertex": 9, "sectors": [74.685, 74.685, 105.315, 105.315], "by_k": {"0": [1, 1]}, "seconds": 0.0}
+{"file": "026_furutaoripa_orihazuru.fold", "vertex": 10, "sectors": [63.435, 63.435, 116.565, 116.565], "by_k": {"0": [1, 1]}, "seconds": 0.0}
+{"file": "030_tanakaoripa_fish_base.fold", "vertex": 13, "sectors": [33.75, 33.75, 78.75, 45.0, 67.5, 101.25], "by_k": {"1": [2, 2], "2": [20, 12], "3": [134, 34]}, "seconds": 45.58}
+{"file": "030_tanakaoripa_fish_base.fold", "vertex": 58, "sectors": [45.0, 67.5, 67.5, 45.0, 67.5, 67.5], "by_k": {"0": [2, 2], "1": [4, 4], "2": [18, 6], "3": [84, 0]}, "seconds": 15.09}
+{"file": "045_traditionaloripa_Pig.fold", "vertex": 8, "sectors": [22.5, 22.5, 22.5, 67.5, 135.0, 90.0], "by_k": {"1": [6, 5], "2": [51, 35], "3": [268, 125]}, "seconds": 33.35}
+{"file": "045_traditionaloripa_Pig.fold", "vertex": 16, "sectors": [26.565, 26.565, 153.435, 153.435], "by_k": {"0": [1, 1]}, "seconds": 0.0}
+{"file": "045_traditionaloripa_Pig.fold", "vertex": 17, "sectors": [71.565, 71.565, 108.435, 108.435], "by_k": {"0": [1, 1]}, "seconds": 0.0}
+{"file": "045_traditionaloripa_Pig.fold", "vertex": 18, "sectors": [49.065, 49.065, 130.935, 130.935], "by_k": {"0": [1, 1]}, "seconds": 0.0}
+{"file": "048_komatsu_Dutch_Rabbit.fold", "vertex": 22, "sectors": [22.5, 45.0, 22.5, 67.5, 135.0, 67.5], "by_k": {"2": [14, 4], "3": [158, 34]}, "seconds": 23.79}
+{"file": "054_tanakaoripa_Hexagon.fold", "vertex": 10, "sectors": [75.0, 75.0, 105.0, 105.0], "by_k": {"0": [1, 1], "4": [6, 0]}, "seconds": 0.18}
+{"file": "054_tanakaoripa_Hexagon.fold", "vertex": 14, "sectors": [60.0, 60.0, 120.0, 120.0], "by_k": {"0": [1, 1], "1": [2, 2], "2": [6, 6]}, "seconds": 0.02}
+{"file": "054_tanakaoripa_Hexagon.fold", "vertex": 16, "sectors": [82.5, 82.5, 97.5, 97.5], "by_k": {"0": [1, 1]}, "seconds": 0.0}
+{"file": "054_tanakaoripa_Hexagon.fold", "vertex": 17, "sectors": [52.5, 52.5, 127.5, 127.5], "by_k": {"0": [1, 1]}, "seconds": 0.0}
+{"file": "054_tanakaoripa_Hexagon.fold", "vertex": 22, "sectors": [22.5, 22.5, 90.0, 67.5, 67.5, 90.0], "by_k": {"0": [2, 2], "2": [14, 6], "3": [220, 72]}, "seconds": 31.76}
+{"file": "054_tanakaoripa_Hexagon.fold", "vertex": 23, "sectors": [37.5, 37.5, 142.5, 142.5], "by_k": {"0": [1, 1]}, "seconds": 0.0}
+{"file": "054_tanakaoripa_Hexagon.fold", "vertex": 32, "sectors": [30.0, 82.5, 150.0, 97.5], "by_k": {}, "seconds": 0.0}
+{"file": "055_komatsu_Sheep.fold", "vertex": 11, "sectors": [67.5, 90.0, 112.5, 90.0], "by_k": {"3": [4, 0], "4": [68, 0]}, "seconds": 6.07}
+{"file": "058_ku_Color-change_Pinwheel_1.fold", "vertex": 8, "sectors": [22.5, 45.0, 157.5, 135.0], "by_k": {"1": [1, 1], "2": [3, 2], "3": [3, 0], "4": [16, 0]}, "seconds": 1.47}
+{"file": "062_furutaoripa_houou.fold", "vertex": 5, "sectors": [56.19, 56.19, 123.81, 123.81], "by_k": {"0": [1, 1]}, "seconds": 0.0}
+{"file": "062_furutaoripa_houou.fold", "vertex": 6, "sectors": [78.69, 78.69, 101.31, 101.31], "by_k": {"0": [1, 1]}, "seconds": 0.0}
+{"file": "070_ku_Pygmy_Jerboa.fold", "vertex": 39, "sectors": [22.5, 22.5, 90.0, 22.5, 67.5, 135.0], "by_k": {"2": [5, 1], "3": [113, 22]}, "seconds": 38.68}
+{"file": "073_komatsu_Squirrel.fold", "vertex": 8, "sectors": [22.5, 22.5, 112.5, 45.0, 45.0, 112.5], "by_k": {"0": [2, 2], "2": [6, 2], "3": [114, 42]}, "seconds": 11.48}
+{"file": "073_komatsu_Squirrel.fold", "vertex": 21, "sectors": [22.5, 45.0, 45.0, 90.0, 112.5, 45.0], "by_k": {"1": [2, 1], "2": [24, 8], "3": [179, 32]}, "seconds": 35.7}
+{"file": "084_ku_4x4_Checkerboard.fold", "vertex": 9, "sectors": [26.565, 90.0, 153.435, 90.0], "by_k": {}, "seconds": 0.0}
+{"file": "084_ku_4x4_Checkerboard.fold", "vertex": 17, "sectors": [45.0, 45.0, 63.435, 45.0, 71.565, 90.0], "by_k": {}, "seconds": 0.02}
+{"file": "093_ku_4_Stripes_3.fold", "vertex": 11, "sectors": [57.764, 57.764, 122.236, 122.236], "by_k": {"0": [1, 1]}, "seconds": 0.0}
+{"file": "093_ku_4_Stripes_3.fold", "vertex": 12, "sectors": [25.529, 25.529, 154.471, 154.471], "by_k": {"0": [1, 1]}, "seconds": 0.0}
+{"file": "093_ku_4_Stripes_3.fold", "vertex": 17, "sectors": [32.236, 32.236, 57.764, 57.764, 90.0, 90.0], "by_k": {}, "seconds": 0.02}
+{"file": "114_kei_Kirby.fold", "vertex": 14, "sectors": [22.5, 45.0, 67.5, 90.0, 90.0, 45.0], "by_k": {"1": [4, 2], "2": [33, 9], "3": [230, 38]}, "seconds": 45.06}
+{"file": "141_kei_kitsune.fold", "vertex": 21, "sectors": [22.5, 45.0, 67.5, 22.5, 90.0, 112.5], "by_k": {"1": [7, 3], "2": [31, 16], "3": [146, 61]}, "seconds": 12.61}
+{"file": "141_kei_kitsune.fold", "vertex": 35, "sectors": [45.0, 45.0, 67.5, 45.0, 67.5, 90.0], "by_k": {"1": [2, 2], "2": [37, 13], "3": [298, 52]}, "seconds": 122.59}
+{"file": "292_tanaka_Aperiodic_Monotile_1.fold", "vertex": 7, "sectors": [30.0, 90.0, 150.0, 90.0], "by_k": {"2": [2, 0], "3": [34, 6], "4": [148, 28]}, "seconds": 19.82}
+{"file": "292_tanaka_Aperiodic_Monotile_1.fold", "vertex": 16, "sectors": [30.0, 30.0, 30.0, 60.0, 120.0, 90.0], "by_k": {"0": [1, 1], "1": [10, 9], "2": [50, 37], "3": [177, 69]}, "seconds": 24.27}
+{"file": "315_kei_Marnie_(Pokemon).fold", "vertex": 18, "sectors": [22.5, 22.5, 45.0, 22.5, 112.5, 135.0], "by_k": {"1": [6, 1], "2": [19, 2], "3": [57, 1]}, "seconds": 9.79}
+{"file": "315_kei_Marnie_(Pokemon).fold", "vertex": 38, "sectors": [22.5, 45.0, 135.0, 45.0, 22.5, 90.0], "by_k": {"3": [44, 4]}, "seconds": 2.82}
+{"file": "325_bernhayes_Unassigned_45\u02da_Crossover.fold", "vertex": 1, "sectors": [45.0, 50.711, 135.0, 129.289], "by_k": {}, "seconds": 0.0}
+{"shapes": 66, "histories_by_k (total, rigid)": {"0": [54, 54], "3": [3418, 866], "4": [655, 130], "2": [608, 301], "1": [111, 76]}, "shapes whose least k rises under rigidity": [[22.5, 67.5, 157.5, 112.5], [22.5, 22.5, 67.5, 67.5, 90.0, 90.0], [22.5, 90.0, 157.5, 90.0], [67.5, 90.0, 112.5, 90.0], [30.0, 90.0, 150.0, 90.0]], "shapes with no rigid history within the tables": [[22.5, 90.0, 157.5, 90.0], [67.5, 90.0, 112.5, 90.0]]}
