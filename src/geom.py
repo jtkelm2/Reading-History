@@ -1,0 +1,111 @@
+"""Arithmetic on directions for the layered model, numeric or exact.
+
+Every geometric decision of src/rigid.py goes through an arithmetic object `ar`:
+  Num()      directions are floats in radians, compared with the tolerance fold_history.EPS;
+  Sym(...)   directions are affine forms with rational coefficients in the variables b_1..b_m
+             (directions in units of pi), and every sign is decided by an Oracle that holds a
+             context of linear constraints; when the context does not decide a sign it raises
+             Need(form, signs).
+The functions below (nrm, eq, between, uniq, maps, ...) are written once, for both.
+"""
+import math
+from fractions import Fraction as Fr
+from functools import cmp_to_key
+
+EPS = 1e-7
+
+
+class Num:
+    """Floats in radians."""
+    PI, TWO_PI, ZERO = math.pi, 2 * math.pi, 0.0
+    def sgn(self, x): return 0 if abs(x) < EPS else (1 if x > 0 else -1)
+    def floor_div(self, x, period):
+        q = math.floor(x / period)
+        if period - (x - q * period) < EPS: q += 1                  # snap just below a period to it
+        return q
+    def half(self, x): return x / 2
+
+
+class Need(Exception):
+    """The oracle's context does not decide the sign of form; signs lists the feasible ones."""
+    def __init__(self, form, signs): self.form, self.signs = form, signs
+
+
+class Lin:
+    """An affine form sum(c_i b_i) + k with rational coefficients (directions in units of pi)."""
+    __slots__ = ('c', 'k')
+    def __init__(self, c, k=Fr(0)): self.c, self.k = tuple(c), Fr(k)
+    def __add__(self, o):
+        if not isinstance(o, Lin): o = Lin((0,) * len(self.c), o)
+        return Lin(tuple(a + b for a, b in zip(self.c, o.c)), self.k + o.k)
+    __radd__ = __add__
+    def __neg__(self): return Lin(tuple(-a for a in self.c), -self.k)
+    def __sub__(self, o): return self + (-o if isinstance(o, Lin) else -Fr(o))
+    def __rsub__(self, o): return (-self) + o
+    def __mul__(self, t): return Lin(tuple(a * t for a in self.c), self.k * t)
+    __rmul__ = __mul__
+    def is_const(self): return not any(self.c)
+    def value(self, b): return sum(c * x for c, x in zip(self.c, b)) + self.k
+    def key(self): return (self.c, self.k)
+    def __repr__(self):
+        t = ['%s*b%d' % (c, i + 1) for i, c in enumerate(self.c) if c] + ([str(self.k)] if self.k or not any(self.c) else [])
+        return ' + '.join(t)
+
+
+class Sym:
+    """Exact affine forms; signs decided by an oracle."""
+    def __init__(self, m, oracle):
+        self.m, self.oracle = m, oracle
+        self.ZERO = Lin((Fr(0),) * m); self.PI = Lin((Fr(0),) * m, 1); self.TWO_PI = Lin((Fr(0),) * m, 2)
+    def var(self, i): return Lin(tuple(Fr(int(j == i)) for j in range(self.m)))
+    def const(self, k): return Lin((Fr(0),) * self.m, Fr(k))
+    def sgn(self, x):
+        if not isinstance(x, Lin): x = self.const(x)
+        return self.oracle.sign(x)
+    def floor_div(self, x, period):
+        """The integer q with 0 <= x - q period < period, decided by sign queries."""
+        p = period.k if isinstance(period, Lin) else Fr(period)
+        q = math.floor(self.oracle.witness(x) / p)
+        lo, hi = self.sgn(x - q * p), self.sgn(x - (q + 1) * p)
+        assert lo >= 0 and hi < 0, 'oracle inconsistent'
+        return q
+    def half(self, x): return x * Fr(1, 2)
+
+
+# ---------------------------------------------------------------- functions for both
+def nrm(ar, x): return x - ar.floor_div(x, ar.TWO_PI) * ar.TWO_PI
+def modpi(ar, x): return x - ar.floor_div(x, ar.PI) * ar.PI
+def eq(ar, x, y): return ar.sgn(nrm(ar, x - y)) == 0
+def between(ar, x, a, b):
+    """x strictly inside the counterclockwise arc from a to b (the full circle minus a if a = b)."""
+    if eq(ar, a, b): return not eq(ar, x, a)
+    da, db = nrm(ar, x - a), nrm(ar, b - a)
+    return ar.sgn(da) > 0 and ar.sgn(db - da) > 0
+def sort(ar, xs): return sorted(xs, key=cmp_to_key(lambda x, y: ar.sgn(x - y)))
+def uniq(ar, xs):
+    out = []
+    for x in sort(ar, [nrm(ar, x) for x in xs]):
+        if not out or not eq(ar, x, out[-1]): out.append(x)
+    if len(out) > 1 and eq(ar, out[0], out[-1]): out.pop()
+    return out
+def mid(ar, a, b):
+    if a is None: return ar.ZERO
+    d = nrm(ar, b - a)
+    if ar.sgn(d) == 0: d = ar.TWO_PI
+    return nrm(ar, a + ar.half(d))
+def maps(ar, S):
+    """Folding maps (e, o) of the sorted state S, x -> e x + o; None if S is not flat."""
+    if not S: return [(1, ar.ZERO)]
+    out = [(1, ar.ZERO)]
+    for c in S[1:]:
+        s, o = out[-1]; out.append((-s, nrm(ar, 2 * s * c + o)))
+    s, o = out[-1]
+    return out if -s == 1 and eq(ar, nrm(ar, 2 * s * S[0] + o), ar.ZERO) else None
+def apply(ar, f, x): return nrm(ar, f[0] * x + f[1])
+def inverse_apply(ar, f, y): return nrm(ar, f[0] * (y - f[1]))
+def sector_of(ar, x, S):
+    if not S: return 0
+    m = len(S)
+    for j in range(m):
+        if eq(ar, x, S[j]) or between(ar, x, S[j], S[(j + 1) % m]): return j
+    raise ValueError('no sector')

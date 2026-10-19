@@ -58,7 +58,7 @@ for ang, kind in ((45, 'inside'), (120, 'outside')):
     print('fold in half, then the %d deg line: %d layer states with rigid steps, %d with reverse folds' % (ang, len(krig), len(krig) + len(new)))
     for k, chs in new.items():
         # which run was split at step 2: the one with joint 0 (the tip) or the one with joint 180 (the base)
-        R = rigid.uniq([0.0, math.pi, D_(ang), D_(360 - ang)])
+        R = rigid.geom.uniq(rigid.NUM, [0.0, math.pi, D_(ang), D_(360 - ang)])
         runs_split = set()
         for ch in chs:
             mu0, up, sense = ch[1]
@@ -73,7 +73,7 @@ for ang, kind in ((45, 'inside'), (120, 'outside')):
     st1 = rigid.step(rigid.initial(), steps[0], 0, 0)
     reasons = set()
     for mu0, up, sense in choices(st1, steps[1], True):
-        R = rigid.uniq(list(st1.S) + steps[1])
+        R = rigid.geom.uniq(rigid.NUM, list(st1.S) + steps[1])
         if not sense or not any(sense): continue
         split_at = {R[(k2 + 1) % len(R)] for k2 in range(len(R)) if sense[k2] != sense[(k2 + 1) % len(R)]
                     and not any(fh.eq(R[(k2 + 1) % len(R)], d) for d in steps[1])}
