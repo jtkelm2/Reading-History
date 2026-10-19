@@ -110,10 +110,12 @@ def sense_options(st, D, mu0):
         yield sense
 
 
-def step(st, D, mu0, up, sense=None):
+def step(st, D, mu0, up, sense=None, why=None):
     """The layered state after the step D with labelling mu0, up side up and senses (default: all
     pieces sense 0, i.e. the rigid half-turn of flatvertex Definition 2.2), or None.
-    A moving piece with sense 0 is lifted over the up side, one with sense 1 over the other side."""
+    A moving piece with sense 0 is lifted over the up side, one with sense 1 over the other side.
+    If why is a list, the reason for a rejection is appended to it."""
+    fail = lambda r: (why.append(r) if why is not None else None)
     S = st.S
     D = [fh.nrm(d) for d in D]
     R = uniq(list(S) + D)
@@ -149,10 +151,10 @@ def step(st, D, mu0, up, sense=None):
         for p in mov:
             lifted = inside(u, U[p])
             for q in sta:
-                if lifted and not pos[parent[q]] < pos[parent[p]]: return None
-                if not lifted and not pos[parent[p]] < pos[parent[q]]: return None
+                if lifted and not pos[parent[q]] < pos[parent[p]]: return fail("(F')")
+                if not lifted and not pos[parent[p]] < pos[parent[q]]: return fail("(F')")
             for q in mov:
-                if sense[q] != sense[p] and lifted and not pos[parent[q]] < pos[parent[p]]: return None
+                if sense[q] != sense[p] and lifted and not pos[parent[q]] < pos[parent[p]]: return fail("(F'')")
     # new order, in the coordinates of Psi
     S2 = uniq([x for x in S if not inD(x)] + [d for d in D if not any(fh.eq(d, x) for x in S)])
     new = State(S2, None)
@@ -197,7 +199,7 @@ def step(st, D, mu0, up, sense=None):
         m = len(moved)
         start = next((i for i in range(m) if isE(moved[i][0])), None)
         if start is None:                                                # no image points: one order
-            if any(o != moved[0][2] for _, _, o in moved): return None
+            if any(o != moved[0][2] for _, _, o in moved): return fail('no extension')
             arcs = [(None, None, moved[0][2])]
         else:
             arcs, i = [], start
@@ -205,18 +207,21 @@ def step(st, D, mu0, up, sense=None):
                 a, b, o = moved[i]
                 if isE(a): arcs.append([a, b, o])
                 else:
-                    if o != arcs[-1][2]: return None
+                    if o != arcs[-1][2]: return fail('no extension')
                     arcs[-1][1] = b
                 i = (i + 1) % m
             arcs = [tuple(x) for x in arcs]
     else:
         arcs = moved
     new.arcs = arcs
-    return new if layered_ok(new) else None
+    r = layered_ok(new, True)
+    return new if r is True else fail(r)
 
 
-def layered_ok(st):
-    """(O1)-(O3) for a state whose orders are stored on the arcs between its image points."""
+def layered_ok(st, reason=False):
+    """(O1)-(O3) for a state whose orders are stored on the arcs between its image points.
+    With reason, returns True or the name of the first condition that fails."""
+    no = lambda r: r if reason else False
     S = st.S
     if not S: return True
     m = len(S)
@@ -231,20 +236,20 @@ def layered_ok(st):
         minus = next(o for a, b, o in st.arcs if a is not None and fh.eq(b, v))
         plus = next(o for a, b, o in st.arcs if a is not None and fh.eq(a, v))
         theta = set(minus) & set(plus)
-        if [f for f in minus if f in theta] != [f for f in plus if f in theta]: return False        # (O1)
+        if [f for f in minus if f in theta] != [f for f in plus if f in theta]: return no('(O1)')
         side = {'-': minus, '+': plus}
         for (t, e) in rays:
             pos = {f: i for i, f in enumerate(side[e])}
-            if t[0] not in pos or t[1] not in pos: return False
+            if t[0] not in pos or t[1] not in pos: return no('taco missing')
             lo, hi = sorted((pos[t[0]], pos[t[1]]))
-            if any(lo < pos[c] < hi for c in theta if c in pos): return False                    # (O3)
+            if any(lo < pos[c] < hi for c in theta if c in pos): return no('(O3)')
         for i in range(len(rays)):
             for j in range(i + 1, len(rays)):
                 (t1, e1), (t2, e2) = rays[i], rays[j]
                 if e1 != e2: continue
                 pos = {f: k for k, f in enumerate(side[e1])}
                 a1, a2 = sorted((pos[t1[0]], pos[t1[1]])); b1, b2 = sorted((pos[t2[0]], pos[t2[1]]))
-                if (a1 < b1 < a2) != (a1 < b2 < a2): return False                                # (O2)
+                if (a1 < b1 < a2) != (a1 < b2 < a2): return no('(O2)')
     return True
 
 

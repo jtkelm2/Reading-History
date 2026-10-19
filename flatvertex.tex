@@ -12,6 +12,7 @@
 \theoremstyle{definition}
 \newtheorem{definition}[theorem]{Definition}
 \newtheorem{fact}[theorem]{Fact}
+\newtheorem{example}[theorem]{Example}
 \theoremstyle{remark}
 \newtheorem{remark}[theorem]{Remark}
 
@@ -23,6 +24,7 @@
 \newcommand{\struct}{\operatorname{struct}}
 \newcommand{\cost}{\operatorname{cost}}
 \newcommand{\Prig}{\mathcal{P}_{\mathrm{rig}}}
+\newcommand{\Prev}{\mathcal{P}_{\mathrm{rev}}}
 \newcommand{\Surv}{\mathcal{P}}
 \newcommand{\up}{H^{\uparrow}}
 \newcommand{\down}{H^{\downarrow}}
@@ -43,6 +45,11 @@ model and passes the collision test (C), but admits no rigid realization. We int
 created them and forgets the order of the steps. We conjecture that no rigidly realizable
 history of $A$ has the surviving partition $\{\{0,4\},\{1,5\},\{3,7\}\}$ (three straight lines), nor
 indeed any surviving partition into straight lines through the vertex.
+We then add reverse folds: each moving piece is given the side over which it is lifted, and the two
+halves of a flap may be lifted over opposite sides. With the complementary labeling this also
+describes inside reverse folds. The history above remains unrealizable with reverse folds, and we
+give a vertex with four creases whose natural history with cancellation is realizable with a
+reverse fold but not rigidly.
 \end{abstract}
 \maketitle
 
@@ -260,6 +267,147 @@ in its interior. Across a point of $D$ (a transversal crossing) both the side an
 switch; across a ray of $S$ (a fold away from $\ell$) neither switches.
 \end{proof}
 
+\section{Reverse folds}\label{sec:reverse}
+
+In a rigid step every moving piece turns the same way. In a reverse fold the two halves of a flap
+turn in opposite senses: the fold of the flap opens during the move and closes again with its two
+faces exchanged. We record this by a sense for each moving piece.
+
+\begin{definition}[Runs, joints, senses]\label{def:senses}
+Let $D$ be a step from a flat $S$, with a labeling $\mu$. A \emph{moving run} is a maximal sequence
+$p_1,\dots,p_r$ of moving pieces that are consecutive counterclockwise, $p_i$ and $p_{i+1}$ sharing
+an endpoint; the shared endpoints lie in $S\setminus D$ and are the \emph{joints} of the run. Fix a
+component $\up$ of $\T\setminus q^{-1}(\ell)$ as in Definition~\ref{def:rigid}. A \emph{sense
+assignment} is a map $\tau$ from the moving pieces to $\{0,1\}$ such that on each moving run either
+$\tau\equiv0$, or there is exactly one joint $s$, the \emph{spine} of the run, such that $\tau$ is
+constant on the pieces of the run before $s$, constant on those after $s$, and different on the two
+sides. Put $U(p):=\up$ if $\tau(p)=0$ and $U(p):=\down$ if $\tau(p)=1$.
+\end{definition}
+
+\begin{definition}[Step with senses]\label{def:sensestep}
+The data are those of Definition~\ref{def:rigid} together with a sense assignment $\tau$.
+
+\smallskip\noindent\textbf{(F$'$)} Let $u\notin E_S\cup q^{-1}(\ell)$, and let $p$ be a moving and $p'$
+a staying piece with $u\in\Phi_S(p)\cap\Phi_S(p')$. Then $\pi(p')<_u\pi(p)$ if $u\in U(p)$, and
+$\pi(p)<_u\pi(p')$ if $u\notin U(p)$.
+
+\smallskip\noindent\textbf{(F$''$)} Let $u$ be as in (F$'$), and let $p,p'$ be moving pieces with
+$\tau(p)\ne\tau(p')$ and $u\in\Phi_S(p)\cap\Phi_S(p')$. If $u\in U(p)$, then $\pi(p')<_u\pi(p)$.
+
+\smallskip\noindent\textbf{New order.} Let $S'$, $\Psi$, $g$ and $u$ be as in Definition~\ref{def:rigid}.
+Split the pieces $p$ with $u\in\Psi(p)$ into three sets: $B_u$, the moving pieces with $u\in U(p)$;
+$C_u$, the staying pieces; and $A_u$, the moving pieces with $u\notin U(p)$. Define $\prec_u$ by
+$B_u\prec_u C_u\prec_u A_u$, by rule~(i) of Definition~\ref{def:rigid} on $C_u$, and by rule~(ii) on
+$B_u$ and on $A_u$. Set $G<'_{g(u)}G'$ iff $p_G\prec_u p_{G'}$, as in Definition~\ref{def:rigid}.
+
+\smallskip
+The step is \emph{rigid with senses} if (F$'$) and (F$''$) hold and $<'$ extends to a layer order
+making $(S',<')$ a layered state. A history is \emph{realizable with reverse folds} if there are
+layered states $(S_i,<^i)$, starting from the initial one, such that each transition is a rigid step
+with senses for $D_i$, for some labeling, choice of $\up$ and sense assignment. Let
+$\Prev(A)$ be the set of surviving partitions of such histories of $A$.
+\end{definition}
+
+\begin{lemma}\label{lem:senses}\leavevmode
+\begin{enumerate}[label=(\arabic*)]
+\item $\prec_u$ is a strict total order, and all pieces of $B_u$, as well as all pieces of $A_u$, have
+the same sense.
+\item If $\tau\equiv0$, a step with senses is a rigid step in the sense of
+Definition~\ref{def:rigid}. Hence $\Prig(A)\subseteq\Prev(A)$.
+\item (F$'$) implies (C). Consequently every step of a history realizable with reverse folds
+satisfies (C).
+\end{enumerate}
+\end{lemma}
+\begin{proof}
+(1) $U(p)$ is one of the disjoint sets $\up$, $\down$. All $p\in B_u$ have $u\in U(p)$, so $U(p)$ is
+the component containing $u$ and $\tau(p)$ is the same for all of them; likewise for $A_u$. Two
+staying pieces with the same parent have disjoint images under $\Phi_S$, and two moving pieces with
+the same parent have disjoint images under $\Psi=\sigma_\ell\circ\Phi_S$; so within $C_u$, and
+within $B_u$ and $A_u$, distinct pieces have distinct parents. These parents lie in $L(u)$ for $C_u$
+and in $L(\sigma_\ell(u))$ for $B_u$ and $A_u$, since $u\in\Psi(p)$ means $\sigma_\ell(u)\in\Phi_S(p)$
+for a moving $p$. Rules~(i) and~(ii) therefore order each set totally.
+
+(2) If $\tau\equiv0$, then $U(p)=\up$ for every moving $p$, (F$'$) is (F), and (F$''$) is vacuous.
+For $u\in\up$ the set $A_u$ is empty and the moving pieces over $u$ lie below the staying ones; for
+$u\in\down$ the set $B_u$ is empty and they lie above. This is rule~(iii).
+
+(3) As in the proof of Lemma~\ref{lem:FC}, with $\up$ replaced by $U(F)$: near
+$w\in q^{-1}(\ell)$ the points on one side of $w$ lie in $U(F)$ and those on the other side do not,
+so (F$'$) requires opposite relative orders of $F$ and $F'$ on the two sides of $w$, while the
+relative order is the same on both sides.
+\end{proof}
+
+\begin{remark}[Reading]\label{rem:reverse}
+Each moving piece $p$ is turned about $\ell$ by a half-turn that lifts it over $U(p)$. Pieces of
+one sense turn together, as in a rigid step. Across a spine the two halves of a run turn in opposite
+senses. (F$'$) says that every moving piece leaves without passing through staying paper, and
+(F$''$) that pieces turning in opposite senses move apart instead of through each other. The new
+order puts the pieces that arrive over the top above the staying ones and those that arrive from
+underneath below them, each group reversed as in a rigid step.
+
+When the two halves of a split run end up below and above the staying layers around them, the
+step is an \emph{outside reverse fold} of the flap formed by the run. The two labelings describe the
+same relative motion from the two sides. With the labeling in which the split run is the base, the
+base's halves turn around the tip, which ends up between them: an \emph{inside reverse fold} of the
+tip.
+
+With the staying paper fixed, opposite turns are an idealization. The two halves of a run are
+hinged to staying paper along rays whose images lie on $\ell$, so both hinges are turns about $\ell$,
+and two faces turned about $\ell$ by different angles cannot share a spine, which does not map into
+$\ell$. In practice the flap is opened slightly during a reverse fold. The definition records the
+combinatorics of the move, not a rigid motion of faces.
+\end{remark}
+
+\begin{example}[Inside and outside reverse folds]\label{ex:reverse}
+In this example directions are in degrees. Fold in half, $D_1=\{0,180\}$, and then fold along a
+second line, $D_2=\{\alpha,360-\alpha\}$. Each of the two runs of $D_2$ has one joint: the
+\emph{tip}, through $0$, and the \emph{base}, through $180$. Faces are named by their endpoints, and
+stacks are listed from bottom to top over the arc, in the coordinates of the folding map, where all
+four faces overlap. The following was computed by exhausting all choices (Appendix~\ref{app:impl}).
+\begin{itemize}[leftmargin=*]
+\item $\alpha=45$. Rigid steps reach four layered states, and steps with senses two more:
+$(180,315)<(315,360)<(0,45)<(45,180)$ and $(45,180)<(0,45)<(315,360)<(180,315)$. In both, the tip
+lies between the two halves of the base: inside reverse folds. Both arise only from sense
+assignments that split the base. Every assignment that splits the tip fails (F$''$) or (O3):
+an outside reverse fold would wrap the tip around base layers that pass through the image of its fold.
+\item $\alpha=120$. Again four layered states are reachable by rigid steps and two more with senses:
+$(240,360)<(180,240)<(120,180)<(0,120)$ and $(0,120)<(120,180)<(180,240)<(240,360)$. In both, the
+halves of the tip enclose the base: outside reverse folds. They arise only from assignments that
+split the tip; every assignment that splits the base fails (F$''$) or (O3).
+\end{itemize}
+\end{example}
+
+\begin{proposition}\label{prop:aprime}
+Let $A'=\{3,8,10,13\}\cdot\pi/8$, and let $K=(\{8,0\},\{3,13\},\{10,0\})$ in units of $\pi/8$, where
+$0$ is a scaffold crease, created by the first step and erased by the third. Then $K$ is a history
+of $A'$, every step of $K$ satisfies (C), and:
+\begin{enumerate}[label=(\alph*)]
+\item $K$ is not rigidly realizable;
+\item $K$ is realizable with reverse folds: rigid steps for $D_1$ and $D_2$, and an outside reverse
+fold for $D_3$ that splits the run from $10$ to $16$ at the joint $13$.
+\end{enumerate}
+\end{proposition}
+\begin{proof}
+All claims were computed (Appendix~\ref{app:impl}); we describe what the computation finds. For (a): after $D_1$ and $D_2$, over the arc where the four
+faces $(0,3)$, $(3,8)$, $(8,13)$, $(13,16)$ overlap, every choice of labelings and up sides gives one
+of four stacks:
+\[
+(0,3)<(13,16)<(8,13)<(3,8),\quad (13,16)<(0,3)<(3,8)<(8,13),
+\]\[
+(3,8)<(8,13)<(13,16)<(0,3),\quad (8,13)<(3,8)<(0,3)<(13,16).
+\]
+Over that arc, the moving pieces of $D_3$ belong to the faces $(8,13)$ and $(13,16)$ for one
+labeling, and to $(0,3)$ and $(3,8)$ for the other. In each stack these two faces are either the two middle layers or the bottom
+and the top layer. So the moving pieces over that arc are neither all above nor all below the
+staying ones, and (F) fails. For (b), starting from the second stack, the pieces in $(8,13)$ and
+$(13,16)$ turn in opposite senses: the first, on top, is lifted, and the second, at the bottom,
+goes underneath. The resulting stack over the arc $(6,8)$ is $(13,3)<(3,8)<(8,10)<(10,13)$, where
+$(13,3)$ is the face formed by $(13,16)$ and $(0,3)$ once the crease $0$ is erased.
+\end{proof}
+
+At $A'$ the crease $8$ has no continuation: the scaffold crease $0$ continues it for two steps,
+and the reverse fold erases it.
+
 \section{The configuration \texorpdfstring{$\{0,1,3,4,5,7\}\cdot\pi/4$}{A}}
 
 From now on the unit is $\pi/4$, so $\T=\mathbb{R}/8\mathbb{Z}$, and
@@ -337,9 +485,20 @@ the four lowest faces. Hence (F) fails for every choice.
 \begin{remark}
 Theorem~\ref{thm:main} does not depend on whether simple folds preserve (O1)--(O3): if they do
 not, $H_2$ has no realization at all. It shows that layer data are needed, since $H_2$ passes
-(C) by Proposition~\ref{prop:base}(d). We expect $H_1$, a sequence of three simple folds, to be
-rigidly realizable, but have not written out the (O1)--(O3) check.
+(C) by Proposition~\ref{prop:base}(d).
 \end{remark}
+
+\begin{proposition}\label{prop:computed}
+The following was computed (Appendix~\ref{app:impl}).
+\begin{enumerate}[label=(\alph*)]
+\item All $64$ choices for the first three steps of $H_2$ give layered states, and the orders they
+give are the eight of the proof of Theorem~\ref{thm:main}.
+\item $H_1$ is rigidly realizable.
+\item $H_2$ is not realizable with reverse folds.
+\end{enumerate}
+Moreover $H_3$ is not realizable with reverse folds, since its third step violates (C)
+(Proposition~\ref{prop:base}(d) and Lemma~\ref{lem:senses}(3)).
+\end{proposition}
 
 \begin{conjecture}[Three lines]\label{conj:lines}
 $\Lambda\notin\Prig(A)$. That is, no rigidly realizable history of $A$, with any number of
@@ -351,23 +510,29 @@ $\{3,7\}$.
 No partition in $\Prig(A)$ has all its blocks straight.
 \end{conjecture}
 
+\begin{conjecture}[Three lines, with reverse folds]\label{conj:linesrev}
+$\Lambda\notin\Prev(A)$.
+\end{conjecture}
+
 \begin{remark}\label{rem:conj}\leavevmode
 \begin{enumerate}[label=(\arabic*),leftmargin=*]
-\item \emph{Relation.} Conjecture~\ref{conj:straight} implies Conjecture~\ref{conj:lines}. The
+\item \emph{Relation.} Conjecture~\ref{conj:straight} implies Conjecture~\ref{conj:lines}, and so does
+Conjecture~\ref{conj:linesrev}, since $\Prig(A)\subseteq\Prev(A)$ (Lemma~\ref{lem:senses}(2)). The
 partitions of $A$ into straight blocks are the five partitions of the set of its three lines:
 $\Lambda$, the three partitions merging two lines, and $\{A\}$.
-\item \emph{Order is free.} Both conjectures constrain only $\Surv(H)$, so they cover every order
+\item \emph{Order is free.} The three conjectures constrain only $\Surv(H)$, so they cover every order
 in which the blocks may be finally created, e.g.\ $\{0,4\}$ first, in the middle, or last.
 \item \emph{Symmetry.} The isometries $x\mapsto -x$, $x\mapsto 4-x$ and $x\mapsto x+4$ preserve
 $A$ and permute its three lines. The model is equivariant under $\Iso(\T)$ (the normalisation
-in Definition~\ref{def:flat} only changes images by a global isometry), so both conjectures are
+in Definition~\ref{def:flat} only changes images by a global isometry), so all three conjectures are
 invariant under these symmetries.
 \item \emph{Evidence.} $H_2$ and $H_3$, the two histories with $\Surv=\Lambda$ exhibited here,
 are not rigidly realizable: $H_2$ by Theorem~\ref{thm:main}, and $H_3$ because its third step
-violates (C), hence (F) by Lemma~\ref{lem:FC}. By contrast $H_1$, which we expect to be rigidly
-realizable, has only one straight block.
+violates (C), hence (F) by Lemma~\ref{lem:FC}. Neither is realizable with reverse folds
+(Proposition~\ref{prop:computed}). By contrast $H_1$, which is rigidly realizable, has only one
+straight block.
 \item \emph{Status.} Histories with a given surviving partition are unbounded in length, so
-neither conjecture is a finite check. A counterexample, if one exists, can be found by
+no conjecture here is a finite check. A counterexample, if one exists, can be found by
 enumerating combinatorial history types.
 \item \emph{Rigidity is essential.} Suppose instead that creases persist once made and fold angles
 vary continuously, so that unfolding a crease to angle $\pi$ does not erase it. Then $\Lambda$
@@ -421,5 +586,21 @@ for s in sorted(res):                                # 8 orders, none admits a f
 }
 The output consists of the eight orders listed in the proof of Theorem~\ref{thm:main}, each with
 the value \texttt{False}.
+
+\section{Implementation of the layered model}\label{app:impl}
+The computed claims of Example~\ref{ex:reverse} and Propositions~\ref{prop:aprime}
+and~\ref{prop:computed} come from an implementation of Definitions~\ref{def:layer},
+\ref{def:rigid}, \ref{def:senses} and~\ref{def:sensestep} (\texttt{src/rigid.py} of the
+\texttt{fold-history} code, checked by \texttt{tools/verify\_flatvertex.py}). Directions are
+floating-point numbers compared with a tolerance of $10^{-7}$. A layered state stores, for each arc
+between consecutive image points, the order of the faces over it. A step is tried with both
+labelings, both choices of $\up$, and, with senses, every sense assignment of
+Definition~\ref{def:senses}. (F), (F$'$) and (F$''$) are checked at one point of each arc of
+$\T\setminus(E_S\cup q^{-1}(\ell))$. The new order is built at one point of each arc of
+$\T\setminus(E_S\cup\sigma_\ell(E_S)\cup q^{-1}(\ell))$ and moved by $g$; it extends to a layer
+order exactly when it agrees across every arc endpoint that is not an image point of $S'$. Then
+(O1)--(O3) are checked. A history is realizable when a depth-first search over these choices
+reaches its last step. As a check of the implementation against the hand computation of
+Theorem~\ref{thm:main}, it reproduces Proposition~\ref{prop:computed}(a).
 
 \end{document}
