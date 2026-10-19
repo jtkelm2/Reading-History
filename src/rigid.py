@@ -273,6 +273,17 @@ class Skeleton:
 
 
 def skeleton(ar, S, D):
+    O = getattr(ar, 'oracle', None)                     # exact arithmetic: reuse within a region
+    if O is not None:
+        key = ('sk', tuple(x.c + (x.k,) for x in S), tuple(x.c + (x.k,) for x in D))
+        r = O.recall(key)
+        if r is None:
+            r = _skeleton(ar, S, D); O.store(key, r if r is not None else False)
+        return r if r is not False else None
+    return _skeleton(ar, S, D)
+
+
+def _skeleton(ar, S, D):
     st = State(ar, S, None)
     E = st.E(); arcsE = arcs_of(E)
     def arc_index(u):

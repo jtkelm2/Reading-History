@@ -4,7 +4,7 @@ For a history type t of degree n (src/lookup.py), the vertex is a point b = (b_1
 its directions in units of pi (b_0 = 0), with 0 < b_1 < ... < b_{n-1} < 2 and Kawasaki's
 condition b_1 - b_2 + ... + b_{n-1} = 1. Replaying t and deciding its realizability (src/rigid.py)
 consults only signs of affine forms in b. We run that computation symbolically: an exact oracle
-(z3 over the rationals) decides each sign from the constraints gathered so far; when they do not
+(exact polygon arithmetic over the rationals) decides each sign from the constraints gathered so far; when they do not
 decide it, the computation is split into the feasible signs and restarted in each part. The result
 is a decision tree: inner nodes are affine forms with a branch per sign, leaves say, for every vertex of the cell, whether t is valid
 (by (L), flatness and its cyclic order) and realizable: 2 rigidly, 1 only with reverse folds,
@@ -14,70 +14,179 @@ leaves partition the vertices into polyhedral cells (relatively open, of every d
 Condition (C) is not replayed: realizability implies it (flatvertex, Lemma 3.3(3)).
 
 Usage:
-  python3 src/cells.py build TABLE.json OUT.json [--seconds=S]
+  python3 src/cells.py build TABLE.json OUT.json [--seconds=S] [--first=N] [--witnesses=PATH]
+Witnesses (one vertex per leaf, for tools/verify_cells.py) go to PATH, or into OUT.
 """
 import json, math, sys, time
 from fractions import Fraction as Fr
-import z3
 import geom, rigid
 
 
-class Oracle:
-    def __init__(self, m):
+def _norm(P, L):
+    if L < 0: P, L = [-x for x in P], -L
+    g = math.gcd(L, *P)
+    return (tuple(x // g for x in P), L // g)
+
+
+class PolyOracle:
+    """Signs of affine forms on a relatively open convex region of dimension <= 2, kept as the
+    vertices of its closure (exact rational points (P, L): b_i = P_i / L), in cyclic order.
+    f > 0 on the region iff f >= 0 at every vertex and f is not 0 at all of them; f = 0 iff it is 0
+    at every vertex (the vertices span the region's affine hull); otherwise f takes both signs and
+    the region splits into three nonempty parts. Splitting is exact clipping."""
+    def __init__(self, m, vertices):
         self.m = m
-        self.B = [z3.Real('b%d' % (i + 1)) for i in range(m)]
-        self.s = z3.Solver()
-        prev = z3.RealVal(0)
-        for x in self.B: self.s.add(x > prev); prev = x
-        self.s.add(prev < 2)
-        self.s.add(z3.Sum([(1 if i % 2 == 0 else -1) * x for i, x in enumerate(self.B)]) == 1)   # Kawasaki
-        self.cache = [{}]; self.model = [None]; self.checks = 0
-    def z(self, x):
-        D = geom.DEN
-        return z3.Sum([z3.RealVal(0)] + [z3.Q(c, D) * self.B[i] for i, c in enumerate(x.c) if c]) + z3.Q(x.k, D)
+        self.V = [list(vertices)]
+        self.cache, self.memo, self.added = {}, {}, [[]]
+        self.pts = [None]; self.checks = 0
+    canon = staticmethod(lambda x: Oracle_canon(x))
     @staticmethod
-    def canon(x):
-        """(key, f): key is x scaled to coprime integers with a positive leading coefficient, f the
-        sign of the scale, so that sign(x) = f * sign(key)."""
-        lead = next((c for c in x.c if c), None)
-        if lead is None: return None, 1
-        g = math.gcd(*x.c, x.k)
-        f = 1 if lead > 0 else -1
-        return (tuple(f * c // g for c in x.c), f * x.k // g), f
-    def rel(self, x, s):
-        e = self.z(x)
-        return e < 0 if s < 0 else (e == 0 if s == 0 else e > 0)
-    def feasible(self, x, s):
-        self.s.push(); self.s.add(self.rel(x, s)); self.checks += 1
-        r = self.s.check(); self.s.pop()
-        if r == z3.unknown: raise RuntimeError('z3 unknown')
-        return r == z3.sat
+    def val(x, v):
+        P, L = v
+        return sum(c * p for c, p in zip(x.c, P)) + x.k * L
     def sign(self, x):
-        key, f = self.canon(x)
+        key, f = Oracle_canon(x)
         if key is None: return (x.k > 0) - (x.k < 0)
-        for d in reversed(self.cache):
-            if key in d: return f * d[key]
-        xn = geom.Lin(key[0], key[1])
-        signs = [s for s in (-1, 0, 1) if self.feasible(xn, s)]
-        if len(signs) == 1: self.cache[-1][key] = signs[0]; return f * signs[0]
-        raise geom.Need(xn, signs)
+        if key in self.cache: return f * self.cache[key]
+        xn = geom.Lin(key[0], key[1]); self.checks += 1
+        vals = [self.val(xn, v) for v in self.V[-1]]
+        pos, neg = any(v > 0 for v in vals), any(v < 0 for v in vals)
+        if pos and neg: raise geom.Need(xn, [-1, 0, 1])
+        sg = 1 if pos else (-1 if neg else 0)
+        self.remember(key, sg); return f * sg
     def point(self):
-        """One point of the current region (a z3 model), as integers P over a common denominator L."""
-        if self.model[-1] is None:
-            self.checks += 1; assert self.s.check() == z3.sat
-            M = self.s.model(); pt = []
-            for b in self.B:
-                v = M.eval(b, model_completion=True); pt.append(Fr(v.numerator_as_long(), v.denominator_as_long()))
+        """The centroid of the vertices: a point of the region's relative interior."""
+        if self.pts[-1] is None:
+            V = self.V[-1]; S = [Fr(0)] * self.m
+            for P, L in V:
+                for i in range(self.m): S[i] += Fr(P[i], L)
+            S = [x / len(V) for x in S]
             L = 1
-            for v in pt: L = L * v.denominator // math.gcd(L, v.denominator)
-            self.model[-1] = ([int(v * L) for v in pt], L)
-        return self.model[-1]
+            for x in S: L = L * x.denominator // math.gcd(L, x.denominator)
+            self.pts[-1] = ([int(x * L) for x in S], L)
+        return self.pts[-1]
+    def remember(self, key, s):
+        self.cache[key] = s; self.added[-1].append(('s', key))
+    def recall(self, key): return self.memo.get(key)
+    def store(self, key, value):
+        if key not in self.memo: self.memo[key] = value; self.added[-1].append(('m', key))
     def push(self, x, s):
-        self.s.push(); self.s.add(self.rel(x, s))
-        key, _ = self.canon(x)
-        self.cache.append({key: s}); self.model.append(None)
+        self.V.append(clip(self.V[-1], x, s)); self.pts.append(None); self.added.append([])
+        key, f = Oracle_canon(x)
+        self.remember(key, f * s)
     def pop(self):
-        self.s.pop(); self.cache.pop(); self.model.pop()
+        self.V.pop(); self.pts.pop()
+        for kind, key in self.added.pop():
+            del (self.cache if kind == 's' else self.memo)[key]
+
+
+def Oracle_canon(x):
+    """(key, f): x scaled to coprime integers with a positive leading coefficient, and the sign f
+    of the scale, so that sign(x) = f * sign(key)."""
+    lead = next((c for c in x.c if c), None)
+    if lead is None: return None, 1
+    g = math.gcd(*x.c, x.k)
+    f = 1 if lead > 0 else -1
+    return (tuple(f * c // g for c in x.c), f * x.k // g), f
+
+
+def _cross(A, B, fa, fb):
+    """The point of the segment AB where an affine form with values fa, fb (numerators) vanishes."""
+    (PA, LA), (PB, LB) = A, B
+    return _norm([fa * pb - fb * pa for pa, pb in zip(PA, PB)], fa * LB - fb * LA)
+
+
+def clip(V, x, s):
+    """The closure of (region with vertices V) intersected with x < 0, x = 0 or x > 0 (s = -1, 0, 1)."""
+    vals = [PolyOracle.val(x, v) for v in V]
+    out = []
+    n = len(V)
+    for i in range(n):
+        A, B = V[i], V[(i + 1) % n]; fa, fb = vals[i], vals[(i + 1) % n]
+        if s == 0:
+            if fa == 0: out.append(A)
+        elif fa * s >= 0: out.append(A)
+        if (fa < 0 < fb or fb < 0 < fa) and n > 1: out.append(_cross(A, B, fa, fb))
+    res = []
+    for v in out:
+        if v not in res: res.append(v)
+    return res
+
+
+def pieces(t):
+    """The pieces of a type: for each assignment of integers to a basis of its required congruences
+    (with Kawasaki's condition b_1 - b_2 + ... = 1), the closure of the part of that affine
+    subspace where 0 < b_1 < ... < b_{n-1} < 2, if it is nonempty with the subspace's dimension.
+    Returns (basis rows, [(values, vertices)])."""
+    import itertools
+    n = t['n']; m = n - 1
+    kaw = tuple((-1) ** i for i in range(m))                     # b_1 - b_2 + b_3 - ...
+    rows, basis = [kaw] + [tuple(v) for v in t['req']], []
+    def rank(R):
+        M = [[Fr(x) for x in r] for r in R]; rk = 0
+        for c in range(m):
+            piv = next((i for i in range(rk, len(M)) if M[i][c] != 0), None)
+            if piv is None: continue
+            M[rk], M[piv] = M[piv], M[rk]
+            for i in range(len(M)):
+                if i != rk and M[i][c] != 0:
+                    f = M[i][c] / M[rk][c]; M[i] = [a - f * b for a, b in zip(M[i], M[rk])]
+            rk += 1
+        return rk
+    for r in rows:
+        if rank(basis + [r]) > len(basis): basis.append(r)
+    others = [r for r in rows if r not in basis]
+    ranges = [range(1, 2)] + [range(sum(2 * c for c in r if c < 0), sum(2 * c for c in r if c > 0) + 1) for r in basis[1:]]
+    order = [geom.Lin(tuple(geom.DEN if j == 0 else 0 for j in range(m)))] + \
+            [geom.Lin(tuple((geom.DEN if j == i + 1 else (-geom.DEN if j == i else 0)) for j in range(m))) for i in range(m - 1)] + \
+            [geom.Lin(tuple(-geom.DEN if j == m - 1 else 0 for j in range(m)), 2 * geom.DEN)]   # all > 0
+    out = []
+    for vals in itertools.product(*ranges):
+        # solve basis . b = vals: reduced row echelon form over the rationals
+        M = [[Fr(x) for x in r] + [Fr(v)] for r, v in zip(basis, vals)]; piv = []; rk = 0
+        for c in range(m):
+            p_ = next((i for i in range(rk, len(M)) if M[i][c] != 0), None)
+            if p_ is None: continue
+            M[rk], M[p_] = M[p_], M[rk]; M[rk] = [x / M[rk][c] for x in M[rk]]
+            for i in range(len(M)):
+                if i != rk and M[i][c] != 0:
+                    f = M[i][c]; M[i] = [a - f * b for a, b in zip(M[i], M[rk])]
+            piv.append(c); rk += 1
+        free = [c for c in range(m) if c not in piv]
+        def point(tv):
+            b = [Fr(0)] * m
+            for j, c in enumerate(free): b[c] = Fr(tv[j])
+            for i, c in enumerate(piv): b[c] = M[i][m] - sum(M[i][f_] * b[f_] for f_ in free)
+            L = 1
+            for x in b: L = L * x.denominator // math.gcd(L, x.denominator)
+            return _norm([int(x * L) for x in b], L), b
+        d = len(free)
+        corners = {0: [()], 1: [(0,), (2,)], 2: [(0, 0), (2, 0), (2, 2), (0, 2)]}[d]
+        V = [point(c)[0] for c in corners]
+        # the other required congruences must hold (integers) on the subspace
+        b0 = point((0,) * d)[1]
+        if any((sum(Fr(c) * x for c, x in zip(r, b0))).denominator != 1 for r in others): continue
+        for f in order:
+            V = clip(V, f, 1) if len(V) > 1 else V
+            if not V: break
+        if not V: continue
+        if any(all(PolyOracle.val(f, v) == 0 for v in V) for f in order): continue   # a strict order fails
+        if d == 0 and any(PolyOracle.val(f, V[0]) <= 0 for f in order): continue
+        dim = 0 if len(V) == 1 else (1 if len(V) == 2 or _collinear(V) else 2)
+        if dim != d: continue
+        out.append((list(vals[1:]), V))
+    return [list(r) for r in basis[1:]], out
+
+
+def _collinear(V):
+    (P0, L0), (P1, L1) = V[0], V[1]
+    u = [Fr(a, L1) - Fr(b, L0) for a, b in zip(P1, P0)]
+    for P, L in V[2:]:
+        w = [Fr(a, L) - Fr(b, L0) for a, b in zip(P, P0)]
+        for i in range(len(u)):
+            for j in range(i + 1, len(u)):
+                if u[i] * w[j] - u[j] * w[i] != 0: return False
+    return True
 
 
 def replay(ar, t, a):
@@ -111,12 +220,17 @@ def replay(ar, t, a):
     return d
 
 
-def decide(ar, t, a):
+def decide(ar, t, a, tid=None):
     """At the vertex a (directions in ar's number type): 2 if t is valid and rigidly realizable,
     1 if valid and realizable with reverse folds only, 0 otherwise. All arithmetic happens in the
     replay and the skeletons; the search over choices is combinatorial."""
-    d = replay(ar, t, a)
-    if d is None: return 0
+    O = getattr(ar, 'oracle', None)
+    key = ('replay', tid)
+    if O is not None and O.recall(key) is not None: d = O.recall(key)
+    else:
+        d = replay(ar, t, a)
+        if O is not None: O.store(key, d if d is not None else False)
+    if d is None or d is False: return 0
     sks = rigid.skeletons([[d[j] for j in T] for T in t['steps']], ar)
     if sks is None: return 0
     if rigid.realizable_sk(sks, False)[0]: return 2
@@ -125,36 +239,48 @@ def decide(ar, t, a):
 
 def build_tree(t, deadline):
     n = t['n']; m = n - 1
-    O = Oracle(m); ar = geom.Sym(m, O)
-    a = [ar.ZERO] + [ar.var(i) for i in range(m)]
-    stats = {'leaves': 0, 'nodes': 0}
-    def explore():
-        if time.monotonic() > deadline: raise TimeoutError
-        try:
-            r = decide(ar, t, a); stats['leaves'] += 1
-            return r
-        except geom.Need as e:
-            stats['nodes'] += 1; ch = {}
-            for s in e.signs:
-                O.push(e.form, s); ch[s] = explore(); O.pop()
-            vals = list(ch.values())
-            if all(isinstance(v, int) for v in vals) and len(set(vals)) == 1:
-                return vals[0]                                      # all branches agree: no split needed
-            return {'f': [str(c) for c in e.form.c], 'k': str(e.form.k), 'c': {str(s): v for s, v in ch.items()}}
-    tree = explore()
-    stats['checks'] = O.checks
-    return tree, stats
+    basis, ps = pieces(t)
+    stats = {'leaves': 0, 'nodes': 0, 'checks': 0, 'pieces': len(ps)}; witnesses = []
+    tree = {'basis': basis, 'pieces': {}}
+    for vals, V in ps:
+        O = PolyOracle(m, V); ar = geom.Sym(m, O)
+        a = [ar.ZERO] + [ar.var(i) for i in range(m)]
+        def explore():
+            if time.monotonic() > deadline: raise TimeoutError
+            try:
+                r = decide(ar, t, a, 0); stats['leaves'] += 1
+                P, L = O.point(); witnesses.append([[p / L for p in P], r])     # one vertex in the cell
+                return r
+            except geom.Need as e:
+                stats['nodes'] += 1; ch = {}
+                for s_ in e.signs:
+                    O.push(e.form, s_); ch[s_] = explore(); O.pop()
+                vals_ = list(ch.values())
+                if all(isinstance(v, int) for v in vals_) and len(set(vals_)) == 1:
+                    return vals_[0]                                  # all branches agree: no split needed
+                return {'f': [str(c) for c in e.form.c], 'k': str(e.form.k), 'c': {str(s_): v for s_, v in ch.items()}}
+        tree['pieces'][','.join(map(str, vals))] = explore()
+        stats['checks'] += O.checks
+    return tree, stats, witnesses
 
 
 def evaluate(tree, a, tol=1e-7):
-    """The leaf of tree at the vertex with directions a (radians, a[0] = 0)."""
+    """The value of tree at the vertex with directions a (radians, a[0] = 0): its piece is given by
+    the values of the basis congruences; 0 if it lies in no piece."""
     b = [x / math.pi for x in a[1:]]
-    while isinstance(tree, dict):
-        v = (sum(int(c) * x for c, x in zip(tree['f'], b)) + int(tree['k'])) / geom.DEN
-        s = 0 if abs(v) < tol else (1 if v > 0 else -1)
-        tree = tree['c'].get(str(s))
-        if tree is None: return None                               # outside the explored region
-    return tree
+    vals = []
+    for r in tree['basis']:
+        v = sum(c * x for c, x in zip(r, b))
+        if abs(v - round(v)) > 1e-6: return 0
+        vals.append(int(round(v)))
+    node = tree['pieces'].get(','.join(map(str, vals)))
+    if node is None: return 0
+    while isinstance(node, dict):
+        v = (sum(int(c) * x for c, x in zip(node['f'], b)) + int(node['k'])) / geom.DEN
+        sg = 0 if abs(v) < tol else (1 if v > 0 else -1)
+        node = node['c'].get(str(sg))
+        if node is None: return None                                # outside the explored region
+    return node
 
 
 def main(argv):
@@ -162,17 +288,21 @@ def main(argv):
         src, out = argv[1], argv[2]
         secs = float(next((x[10:] for x in argv if x.startswith('--seconds=')), 3600))
         d = json.load(open(src)); t0 = time.monotonic(); deadline = t0 + secs
-        trees, rows, complete = [], [], True
+        first = int(next((x[8:] for x in argv if x.startswith('--first=')), 0))
+        if first: d['types'] = d['types'][:first]
+        trees, rows, wits, complete = [], [], [], True
         for i, t in enumerate(d['types']):
             t1 = time.monotonic()
-            try: tree, st = build_tree(t, deadline)
+            try: tree, st, w = build_tree(t, deadline)
             except TimeoutError: complete = False; break
-            trees.append(tree); st['seconds'] = round(time.monotonic() - t1, 3); rows.append(st)
+            trees.append(tree); wits.append(w); st['seconds'] = round(time.monotonic() - t1, 3); rows.append(st)
         meta = {'n': d['meta']['n'], 'k': d['meta']['k'], 'types': len(d['types']), 'trees': len(trees),
                 'complete': complete and len(trees) == len(d['types']), 'seconds': round(time.monotonic() - t0, 1),
                 'leaves': sum(r['leaves'] for r in rows), 'tree_nodes': sum(r['nodes'] for r in rows),
-                'z3_checks': sum(r['checks'] for r in rows), 'max_type_seconds': max((r['seconds'] for r in rows), default=0)}
-        json.dump({'meta': meta, 'trees': trees, 'stats': rows}, open(out, 'w'))
+                'sign_queries': sum(r['checks'] for r in rows), 'max_type_seconds': max((r['seconds'] for r in rows), default=0)}
+        wpath = next((x[12:] for x in argv if x.startswith('--witnesses=')), None)
+        json.dump({'meta': meta, 'trees': trees, 'stats': rows} if wpath else {'meta': meta, 'trees': trees, 'stats': rows, 'witnesses': wits}, open(out, 'w'))
+        if wpath: json.dump({'witnesses': wits}, open(wpath, 'w'))
         print(json.dumps(meta), flush=True)
 
 

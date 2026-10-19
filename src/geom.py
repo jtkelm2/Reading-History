@@ -81,6 +81,13 @@ class Sym:
     def floor_div(self, x, period):
         """The integer q with 0 <= x - q period < period, decided by sign queries."""
         p = period.k                                   # period is a constant Lin: PI or TWO_PI
+        key = ('fd', x.c, x.k, p)
+        q = self.oracle.recall(key)
+        if q is not None: return q
+        q = self._floor_div(x, p)
+        self.oracle.store(key, q)
+        return q
+    def _floor_div(self, x, p):
         P, L = self.oracle.point()
         q = x.num_at(P, L) // (p * L)
         lo, hi = self.sgn(x - Lin((0,) * len(x.c), q * p)), self.sgn(x - Lin((0,) * len(x.c), (q + 1) * p))
