@@ -51,3 +51,41 @@ depends on the layer orders, which depend on the cyclic order of the images of t
 changes inside a congruence cell. Applying it in the tables needs cells refined by the order of
 image points (still linear conditions, but many more of them), or a per-vertex check over the
 choices of labelling and up-side at every step, which is a search at runtime. Deferred.
+
+## Tables built
+
+| Degree | Hidden rays k | Types | Build time | Complete |
+|---|---|---|---|---|
+| 2 | 0 / 1 / 2 | 1 / 0 / 0 | < 1 s | yes |
+| 4 | 0 / 1 / 2 / 3 / 4 | 1 / 2 / 12 / 82 / 556 | 0.0 / 0.1 / 1.4 / 19.7 / 303.8 s | yes |
+| 6 | 0 / 1 / 2 | 4 / 54 / 688 | 0.1 / 4.5 / 144.5 s | yes |
+
+Degree 2 has no types with hidden rays: its first step uses both visible rays, so no later step
+has an anchor. All builds: z3 4.16, one core, `nice -n 19`.
+
+## Validation
+
+`tools/validate_table.py tables` compares, at every vertex shape of degree ≤ 6 in the corpus and the
+paper's examples (74 shapes, each once up to rotation and reflection) and every depth built, the
+tables' histories with those of the local search, restricted to histories with no hidden-only
+step. Result: 265 of 265 comparisons equal. `tools/verify_examples.py --table=tables` reproduces the
+paper's numbers for the running and body patterns.
+
+## First results on the corpus
+
+`results/lookup_first_build/`: `corpus_search.jsonl` (local search, as on `overnight`),
+`corpus_tables.jsonl` (`--table=tables`), `comparison.md`. 170 s per pattern, one core.
+
+- **Resolved:** search 41, tables 28. Every pattern the tables resolve, the search resolves too.
+- **Cost on the 28 both resolve:** equal on 23; higher with the tables on 5 (016: 15 vs 13,
+  048: 25 vs 19, 058: 17 vs 16, 070: 13 vs 9, 114: 18 vs 16).
+- **Time on those 28:** search 106.9 s in total, tables 39.8 s. The local phase with the tables
+  takes 0.04–0.16 s per pattern; the rest is the global z3 problem.
+- **Why the tables fail (20 patterns):** 13 have a vertex of degree > 6 (10 of degree 8 first,
+  and one each of degree 12, 16, 20); 6 have a vertex of degree ≤ 6 with no history within the
+  tables (degree 4: 054, 084, 325; degree 6: 015, 093, 315); 304 times out in both.
+- **Why the costs differ** (search optimum inspected vertex by vertex): 048, 058, 114 and 093 use
+  histories with a hidden-only step, which the tables exclude, and 048 and 093 also a degree-6
+  vertex with 3 hidden rays (table depth 2); 054, 084, 325 and 015 need collapses. 016 uses only
+  histories the tables contain: its higher cost comes from core-guided expansion taking a
+  different path, since neither cost is certified minimal.
