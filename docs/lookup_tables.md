@@ -84,8 +84,10 @@ paper's numbers for the running and body patterns.
 - **Why the tables fail (20 patterns):** 13 have a vertex of degree > 6 (10 of degree 8 first,
   and one each of degree 12, 16, 20); 6 have a vertex of degree ≤ 6 with no history within the
   tables (degree 4: 054, 084, 325; degree 6: 015, 093, 315); 304 times out in both.
-- **Why the costs differ** (search optimum inspected vertex by vertex): 048, 058, 114 and 093 use
-  histories with a hidden-only step, which the tables exclude, and 048 and 093 also a degree-6
-  vertex with 3 hidden rays (table depth 2); 054, 084, 325 and 015 need collapses. 016 uses only
-  histories the tables contain: its higher cost comes from core-guided expansion taking a
-  different path, since neither cost is certified minimal.
+- **Why the tables do worse** (the search's optimum inspected vertex by vertex): the optima of
+  048, 058, 114 and 093 use histories with a hidden-only step, which the tables exclude, and those
+  of 048 and 093 also a degree-6 vertex with 3 hidden rays (table depth 2); the optima of 054,
+  084, 325 and 015 use collapses. The optimum of 016 uses only histories the tables contain: its
+  higher cost with the tables comes from core-guided expansion taking a different path, and
+  neither cost is certified minimal. 070 was not diagnosed (the search timed out in the
+  diagnostic run, after 13 s in the corpus run).
