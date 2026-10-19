@@ -153,7 +153,7 @@ class Vertex:
                 cs = self.step_constraints(status, list(T))
                 if cs is None: continue
                 self.s.push(); self.s.add(cs)
-                left = self.deadline - time.time()
+                left = self.deadline - time.monotonic()
                 if left <= 0: raise Undecided()
                 if left < 1e6: self.s.set('timeout', max(1, int(1000 * left)))
                 r = self.s.check()
@@ -196,7 +196,7 @@ def min_history(A, kmax=4, log=print, seconds=math.inf, kmin=0):
     (None, None) if there is none up to kmax; ('undecided', k) if the search for k ran out of
     seconds (each k gets its own allowance)."""
     for k in range(kmin, kmax + 1):
-        V = Vertex(A, k); nodes = 0; deadline = time.time() + seconds
+        V = Vertex(A, k); nodes = 0; deadline = time.monotonic() + seconds
         try:
             for comp in V.placements():
                 f = V.search(comp, deadline=deadline); nodes += V.nodes

@@ -390,7 +390,7 @@ def solve(P, log=print, budget=600):
     the options given so far.  lower_bound (each vertex at its first level, a collapse step costing
     at least 1) is a lower bound over the whole search space, so cost == lower_bound certifies that
     the minimum found is the minimum over the search space."""
-    t0 = time.time()
+    t0 = time.monotonic()
     LV = levels(); level, kmin, opts, ladder = {}, {}, {}, {}
     for p in P.interior:
         for li, (c, k) in enumerate(LV):
@@ -401,7 +401,7 @@ def solve(P, log=print, budget=600):
         else:
             return {'status': 'local fail', 'first': p}
     lower = sum(k + W_COLLAPSE * c for c, k in (LV[kmin[p]] for p in P.interior))
-    left = lambda: max(1, int(1000 * (budget - (time.time() - t0))))   # ms; every z3 call is bounded
+    left = lambda: max(1, int(1000 * (budget - (time.monotonic() - t0))))   # ms; every z3 call is bounded
     rounds = 0; lazy_rounds = [0]; rebuild = True
     while True:
         if rebuild:
@@ -410,13 +410,13 @@ def solve(P, log=print, budget=600):
         r = M.s.check(list(M.track))
         if r == z3.sat:
             learned = refine(P, M, opts, M.s.model(), [M.s])
-            if lazy_rounds[0] % 50 == 0: log('    lazy %d learned %d %s (%.0fs)' % (lazy_rounds[0], learned, KINDS, time.time() - t0))
+            if lazy_rounds[0] % 50 == 0: log('    lazy %d learned %d %s (%.0fs)' % (lazy_rounds[0], learned, KINDS, time.monotonic() - t0))
             if not learned: break
             lazy_rounds[0] += 1
-            if time.time() - t0 > budget: return {'status': 'timeout', 'rounds': rounds}
+            if time.monotonic() - t0 > budget: return {'status': 'timeout', 'rounds': rounds}
             continue
         if r != z3.sat and r != z3.unsat:
-            return {'status': 'timeout' if time.time() - t0 >= budget - 1 else 'unknown', 'rounds': rounds}
+            return {'status': 'timeout' if time.monotonic() - t0 >= budget - 1 else 'unknown', 'rounds': rounds}
         core = [M.track[c] for c in M.s.unsat_core()]
         grown = []
         for p in core:
@@ -425,9 +425,9 @@ def solve(P, log=print, budget=600):
                 level[p] += 1; c, k = seq[level[p]]
                 opts[p] = opts[p] + list(P.options(p, k, c)); grown.append(p)
         rebuild = True
-        log('  round %d: core %s, expanded %s (%.0fs)' % (rounds, core, grown, time.time() - t0))
+        log('  round %d: core %s, expanded %s (%.0fs)' % (rounds, core, grown, time.monotonic() - t0))
         if not grown: return {'status': 'global unsat', 'core': core, 'rounds': rounds}
-        if time.time() - t0 > budget: return {'status': 'timeout', 'rounds': rounds}
+        if time.monotonic() - t0 > budget: return {'status': 'timeout', 'rounds': rounds}
     o = z3.Optimize(); o.add(M.s.assertions()); o.add(list(M.track))
     c = M.cost(); o.minimize(c)
     while True:
@@ -540,7 +540,7 @@ class Checker:
     minimal cost among the options in res['opts']."""
     def __init__(self, P, res, pin=True, budget=3600, scope='geometry'):
         self.P, self.M, self.opts = P, res['model'], res['opts']
-        self.deadline = time.time() + budget; self.unknown = 0
+        self.deadline = time.monotonic() + budget; self.unknown = 0
         M, m = self.M, res['m']
         self.s = M.s
         if scope == 'minimal':
@@ -557,7 +557,7 @@ class Checker:
         if extra is not None:
             self.n += 1; a = z3.FreshBool('q'); self.s.add(z3.Implies(a, extra)); lits.append(a)
         while True:
-            self.s.set('timeout', max(1, int(1000 * (self.deadline - time.time()))))
+            self.s.set('timeout', max(1, int(1000 * (self.deadline - time.monotonic()))))
             r = self.s.check(lits)
             if r == z3.unsat: return None
             if r != z3.sat: self.unknown += 1; return 'unknown'
@@ -630,10 +630,10 @@ def geometries(P, res, cap=1000, budget=1800):
     """Minimal-cost geometries within the search space: dicts with the model m, the hidden
     directions (choice), a hashable selection, and the total length of the segments.  Stops after
     cap geometries or budget seconds; the second value says whether the list is complete."""
-    M, opts = res['model'], res['opts']; s = M.s; out = []; t0 = time.time(); r = None
+    M, opts = res['model'], res['opts']; s = M.s; out = []; t0 = time.monotonic(); r = None
     s.push(); s.add(M.cost() == res['cost'])
     while len(out) < cap:
-        s.set('timeout', max(1, int(1000 * (budget - (time.time() - t0)))))
+        s.set('timeout', max(1, int(1000 * (budget - (time.monotonic() - t0)))))
         r = s.check(list(M.track))
         if r != z3.sat: break
         m = s.model()
@@ -782,7 +782,7 @@ def main(argv):
         elif a.startswith('--tol='): tols = (float(a[6:]),)
         elif a == '--triage': analyse_it = False
         else: args.append(a)
-    path = args[0]; t0 = time.time()
+    path = args[0]; t0 = time.monotonic()
     summary = {'file': path.split('/')[-1]}
     for tol in tols:
         P = Pattern(path, tol)
@@ -793,10 +793,10 @@ def main(argv):
         summary.update(status='not flat-foldable', vertices=notflat); print(json.dumps(summary)); return
     if table:                         # local histories from the lookup tables only (src/lookup.py)
         import lookup
-        tl = time.time(); T = lookup.Table(table); summary['table_load_s'] = round(time.time() - tl, 2)
+        tl = time.monotonic(); T = lookup.Table(table); summary['table_load_s'] = round(time.monotonic() - tl, 2)
         opt, spent = lookup.options_for(T, P), [0.0]
         def timed(p, k, c=0):
-            t1 = time.time(); r = opt(p, k, c); spent[0] += time.time() - t1; return r
+            t1 = time.monotonic(); r = opt(p, k, c); spent[0] += time.monotonic() - t1; return r
         P.options = timed
     res = solve(P, log=lambda s: None if analyse_it is False else print(s, flush=True), budget=budget)
     summary['status'] = res['status']
@@ -818,7 +818,7 @@ def main(argv):
         for (p, r), (pts, how) in sorted(paths.items(), key=lambda kv: (kv[0][0], kv[0][1])):
             print('  hidden from %d at %.2f deg: %s, %s' % (p, P.deg(r), ' -> '.join('(%.3f, %.3f)' % q for q in pts), how))
         summary.update(report(P, folds, lt, paths, res['collapses'], out or path.split('/')[-1].rsplit('.', 1)[0]))
-    summary['t'] = round(time.time() - t0, 1)
+    summary['t'] = round(time.monotonic() - t0, 1)
     print(json.dumps(summary))
 
 

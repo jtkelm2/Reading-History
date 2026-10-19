@@ -63,7 +63,7 @@ class Builder:
 
     def run(self):
         for comp in self.placements():
-            if time.time() > self.deadline: self.complete = False; break
+            if time.monotonic() > self.deadline: self.complete = False; break
             self.search(comp)
         return self
 
@@ -162,7 +162,7 @@ class Builder:
                 yield list(T)
 
     def dfs(self, status, hist, req):
-        if time.time() > self.deadline: self.complete = False; return
+        if time.monotonic() > self.deadline: self.complete = False; return
         self.nodes += 1
         N, rays = len(self.rays), self.rays
         if all(status[j] == 1 if rays[j][0] == 'v' else status[j] == 2 for j in range(N)):
@@ -208,15 +208,15 @@ class Builder:
                 self.dfs(st2, hist + [T], req + newreq)
                 self.vis = saved
             self.s.pop()
-            if time.time() > self.deadline: self.complete = False; return
+            if time.monotonic() > self.deadline: self.complete = False; return
 
 
 def build(n, k, outdir, seconds):
-    t0 = time.time()
+    t0 = time.monotonic()
     B = Builder(n, k, t0 + seconds).run()
     os.makedirs(outdir, exist_ok=True)
     meta = {'n': n, 'k': k, 'types': len(B.types), 'nodes': B.nodes, 'checks': B.checks, 'unknown': B.unknown,
-            'complete': B.complete, 'seconds': round(time.time() - t0, 1), 'z3': z3.get_version_string()}
+            'complete': B.complete, 'seconds': round(time.monotonic() - t0, 1), 'z3': z3.get_version_string()}
     with open(os.path.join(outdir, 'deg%d_k%d.json' % (n, k)), 'w') as f:
         json.dump({'meta': meta, 'types': B.types}, f)
     return meta
