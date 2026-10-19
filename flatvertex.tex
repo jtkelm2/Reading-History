@@ -1,0 +1,425 @@
+\documentclass[11pt]{amsart}
+\usepackage[margin=1.15in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools,enumitem}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black]{hyperref}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{fact}[theorem]{Fact}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\T}{\mathbb{T}}
+\newcommand{\Pl}{\mathbb{P}}
+\newcommand{\Iso}{\operatorname{Iso}}
+\newcommand{\arc}[2]{(#1,#2)}
+\newcommand{\cl}{\operatorname{cl}}
+\newcommand{\struct}{\operatorname{struct}}
+\newcommand{\cost}{\operatorname{cost}}
+\newcommand{\Prig}{\mathcal{P}_{\mathrm{rig}}}
+\newcommand{\Surv}{\mathcal{P}}
+\newcommand{\up}{H^{\uparrow}}
+\newcommand{\down}{H^{\downarrow}}
+
+\title[Sequential realizability of a flat vertex]{Sequential realizability of a flat vertex:\\
+a rigid layered model and one six-crease configuration}
+\date{}
+
+\begin{document}
+\begin{abstract}
+We fix a combinatorial model of folding a single flat vertex by a sequence of steps, each of
+which folds along one line of the current folded image and may create and erase creases. We
+add a layered refinement in which each step is a rigid half-turn of a block of layers. For the
+vertex $A=\{0,1,3,4,5,7\}\cdot\pi/4$ we show that a natural history with cancellation, namely
+\emph{fold both diagonals, fold the full cross, unfold the line $\{\pi/2,3\pi/2\}$}, is valid in the base
+model and passes the collision test (C), but admits no rigid realization. We introduce the
+\emph{surviving partition} of a history, which groups the final creases by the step that last
+created them and forgets the order of the steps. We conjecture that no rigidly realizable
+history of $A$ has the surviving partition $\{\{0,4\},\{1,5\},\{3,7\}\}$ (three straight lines), nor
+indeed any surviving partition into straight lines through the vertex.
+\end{abstract}
+\maketitle
+
+
+\section{Base model}
+
+\subsection*{Conventions}
+$\T := \mathbb{R}/2\pi\mathbb{Z}$ (directions), ordered via representatives in $[0,2\pi)$;
+$\Pl := \mathbb{R}/\pi\mathbb{Z}$ (lines) with projection $q\colon \T\to\Pl$.
+$\arc{a}{b}$ denotes the open counterclockwise arc from $a$ to $b$, and $\cl$ its closure.
+For $c\in\T$ let $\sigma_c(x) := 2c-x$. Since $2(c+\pi)=2c$ in $\T$, $\sigma_c$ depends only on
+$q(c)$, so $\sigma_\ell$ is defined for $\ell\in\Pl$.
+$\Iso(\T) := \{x\mapsto \varepsilon x+t : \varepsilon=\pm1,\ t\in\T\}$.
+
+\begin{fact}\label{fact:conj}
+For $g\in\Iso(\T)$ and $x\in\T$: $g\circ\sigma_x\circ g^{-1}=\sigma_{g(x)}$.
+\end{fact}
+\begin{proof}
+For $g(y)=\varepsilon y+t$: $g\sigma_x g^{-1}(y)=\varepsilon\bigl(2x-\varepsilon(y-t)\bigr)+t
+=2(\varepsilon x+t)-y$.
+\end{proof}
+
+\begin{definition}[Faces, folding maps, flatness]\label{def:flat}
+Let $S\subset\T$ be finite, $S=\{s_1<\dots<s_m\}$. If $m\ge1$ the \emph{faces} of $S$ are
+$F_j:=\arc{s_j}{s_{j+1}}$ (indices mod $m$); if $S=\emptyset$ the only face is $\T$.
+The \emph{folding maps} are $\varphi_1:=\mathrm{id}$ and
+$\varphi_{j+1}:=\varphi_j\circ\sigma_{s_{j+1}}$ for $1\le j<m$.
+$S$ is \emph{flat} if $S=\emptyset$ or $\varphi_m\circ\sigma_{s_1}=\mathrm{id}$.
+\end{definition}
+
+\begin{fact}\label{fact:Phi}
+Let $S\ne\emptyset$ be flat. Then $m$ is even and every face has length $\le\pi$ (Kawasaki).
+The map $\Phi_S\colon\T\to\T$, $\Phi_S|_{\cl F_j}:=\varphi_j$, is well defined and continuous,
+since $\varphi_{j+1}(s_{j+1})=\varphi_j\sigma_{s_{j+1}}(s_{j+1})=\varphi_j(s_{j+1})$ and,
+at $s_1$, $\varphi_m(s_1)=\varphi_m\sigma_{s_1}(s_1)=s_1=\varphi_1(s_1)$.
+Set $\Phi_\emptyset:=\mathrm{id}$.
+\end{fact}
+
+\begin{definition}\label{def:Pi}
+For flat $S$ and $\ell\in\Pl$ let $\Pi_S(\ell):=\{x\in\T : q(\Phi_S(x))=\ell\}$.
+It is finite: $\Phi_S$ is an isometry on each closed face, which has length $\le\pi$, so each
+closed face contains at most two points of $\Pi_S(\ell)$; and $\Pi_\emptyset(\ell)=q^{-1}(\ell)$.
+\end{definition}
+
+\begin{definition}[Step]\label{def:step}
+A \emph{step} from a flat $S$ is a nonempty $D\subset\T$ with $|D|$ even and
+$D\subseteq\Pi_S(\ell)$ for some $\ell\in\Pl$; this $\ell$ is unique and denoted $\ell(D)$.
+Put $N(D):=D\setminus S$ (created), $K(D):=D\cap S$ (erased). The result is $S\mathbin{\triangle}D$.
+This is exactly the original definition: (P) is $|D|$ even, and (L) is $D\subseteq\Pi_S(\ell)$.
+\end{definition}
+
+\begin{definition}[Pieces and labelings]\label{def:label}
+The \emph{pieces} of a step $D$ from $S$ are the faces of $S\cup D$. A \emph{labeling} is a map
+$\mu\colon\{\text{pieces}\}\to\{0,1\}$ such that two consecutive pieces receive different labels
+iff their common endpoint lies in $D$. As $|D|$ is even there are exactly two labelings, and
+they are complementary. Label $1$ means \emph{moving}. The parent face of a piece $p$, i.e.\ the
+face of $S$ containing $p$, is denoted $\pi(p)$.
+\end{definition}
+
+\begin{lemma}\label{lem:result}
+Let $D$ be a step from flat $S$, $\ell=\ell(D)$, and $\mu$ a labeling. Define
+$\Psi_\mu:=\Phi_S$ on closures of pieces with $\mu=0$ and $\Psi_\mu:=\sigma_\ell\circ\Phi_S$ on
+closures of pieces with $\mu=1$. Then $S\mathbin{\triangle}D$ is flat, and
+$\Phi_{S\triangle D}=g\circ\Psi_\mu$ for some $g\in\Iso(\T)$.
+\end{lemma}
+\begin{proof}
+$\Psi_\mu$ is well defined and continuous because $\sigma_\ell$ fixes
+$\Phi_S(D)\subseteq q^{-1}(\ell)$ pointwise. Compare the restrictions of $\Psi_\mu$ to the two
+pieces meeting at a point $x\in S\cup D$. Below we treat the case where the piece before $x$ has
+label $0$; the other case follows by composing both restrictions on the left with $\sigma_\ell$.
+If $S=\emptyset$, read $\varphi_j=\mathrm{id}$.
+\begin{itemize}[leftmargin=*]
+\item If $x\in S\setminus D$, $x=s_{j+1}$, the labels agree and the restrictions are $\varphi_j$
+and $\varphi_{j+1}=\varphi_j\sigma_x$.
+\item If $x\in N(D)$ lies in a face $F_j$, then $q(\varphi_j(x))=\ell$, so by
+Fact~\ref{fact:conj} $\varphi_j\sigma_x=\sigma_{\varphi_j(x)}\varphi_j=\sigma_\ell\varphi_j$.
+So the restrictions are $\varphi_j$ and $\sigma_\ell\varphi_j=\varphi_j\sigma_x$, and $x$ becomes
+a fold.
+\item If $x\in K(D)$, $x=s_{j+1}$, then
+the restrictions are $\varphi_j$ and
+$\sigma_\ell\varphi_{j+1}=\sigma_\ell\varphi_j\sigma_x=\sigma_\ell\sigma_\ell\varphi_j=\varphi_j$,
+using $\varphi_j\sigma_x=\sigma_\ell\varphi_j$ as before. So they coincide and the fold at $x$
+disappears.
+\end{itemize}
+Thus $\Psi_\mu$ is continuous, piecewise in $\Iso(\T)$, and changes by $\sigma_x$ exactly at the
+points $x$ of $S\mathbin{\triangle}D$. Let $g\in\Iso(\T)$ make $g\circ\Psi_\mu$ the identity on the first face of
+$S\mathbin{\triangle}D$. Then the folding maps of $S\mathbin{\triangle}D$ are the restrictions of
+$g\circ\Psi_\mu$, and the closing condition holds because $g\circ\Psi_\mu$ is continuous around
+the whole circle. (If $S\mathbin{\triangle}D=\emptyset$, $\Psi_\mu$ is a single isometry and
+$g=\Psi_\mu^{-1}$.)
+\end{proof}
+
+\begin{lemma}[Reversibility]\label{lem:rev}
+If $D$ is a step from $S$, then $D$ is a step from $S\mathbin{\triangle}D$.
+\end{lemma}
+\begin{proof}
+For $d\in D$, $\Psi_\mu(d)=\Phi_S(d)$ because $\sigma_\ell$ fixes $q^{-1}(\ell)$ pointwise. By
+Lemma~\ref{lem:result}, $\Phi_{S\triangle D}(d)=g(\Phi_S(d))\in g\bigl(q^{-1}(\ell)\bigr)$, a single
+line, for all $d\in D$.
+\end{proof}
+
+\begin{definition}[Histories]\label{def:hist}
+A \emph{history} is a tuple $H=(D_1,\dots,D_n)$ with $S_0=\emptyset$,
+$S_i=S_{i-1}\mathbin{\triangle}D_i$, and each $D_i$ a step from $S_{i-1}$. It is a history of $A$
+if $S_n=A$. For $a\in A$ let $\tau_H(a):=\max\{i : a\in N(D_i)\}$; the set is nonempty since $a\notin S_0$. The \emph{structure}
+$\struct(H)$ is the preorder $a\preceq b\iff\tau_H(a)\le\tau_H(b)$. The \emph{cost} is
+$\cost(H):=\sum_i|K(D_i)|$. $R(A)$ is the set of structures of histories of $A$, and $R_0(A)$
+the subset coming from histories of cost $0$.
+\end{definition}
+
+\begin{definition}[Surviving partition, straight blocks]\label{def:surv}
+The \emph{surviving partition} of a history $H=(D_1,\dots,D_n)$ of $A$ is
+\[
+\Surv(H):=\bigl\{\tau_H^{-1}(i) : 1\le i\le n\bigr\}\setminus\{\emptyset\},
+\]
+a partition of $A$. Its blocks are called the \emph{surviving blocks} of $H$: the block
+$\tau_H^{-1}(i)$ is what survives in $A$ of the creations made by step $i$. A set $B\subseteq\T$ is
+\emph{straight} if $B+\pi=B$, i.e.\ $B$ is a union of lines through the vertex.
+\end{definition}
+
+\begin{remark}\label{rem:surv}
+$\Surv(H)$ is the partition underlying $\struct(H)$, with the order of the classes forgotten.
+It ignores scaffold creases, i.e.\ creases created and later erased, and it ignores earlier
+creations of creases of $A$ that were erased and created again: only the last creation counts.
+\end{remark}
+
+\begin{definition}[Collision condition (C)]\label{def:C}
+A step $D$ from $S$ satisfies (C) if the following holds. Whenever $F,F'$ are faces of $S$ with
+$F\cap D=F'\cap D=\emptyset$, and $x\in F$, $x'\in F'$ satisfy
+$\Phi_S(x)=\Phi_S(x')\in q^{-1}(\ell(D))$, then $\mu(F)=\mu(F')$. Such faces are pieces, and the
+condition does not depend on which labeling is used.
+\end{definition}
+
+\section{Layered model}
+
+\begin{definition}[Layered state]\label{def:layer}
+Let $S$ be flat. For a face $F$ put $W_F:=\Phi_S(F)$, an open arc (or $\T$ if $S=\emptyset$). Let $E_S:=\Phi_S(S)$, a
+finite set, and for $u\notin E_S$ let $L(u):=\{F : u\in W_F\}$.
+A \emph{layer order} on $S$ is a family $(<_u)_{u\in\T\setminus E_S}$ of strict total orders on
+$L(u)$ that is locally constant in $u$.
+
+For $v\in E_S$, write $<_{v^+}$ and $<_{v^-}$ for the order at points of $\T\setminus E_S$
+immediately counterclockwise, resp.\ clockwise, of $v$; likewise $L(v^\pm)$. Put
+$\Theta(v):=L(v^-)\cap L(v^+)$, the faces \emph{passing through} $v$. The \emph{taco} of a ray
+$s=s_{j+1}\in S$ is $\{F_j,F_{j+1}\}$. Since $\varphi_{j+1}(s+t)=\varphi_j(s-t)$, both faces of the
+taco of $s$ lie in $L(v^{\epsilon})$ for exactly one sign $\epsilon=\epsilon(s)$, where
+$v=\Phi_S(s)$. The pair $(S,<)$ is a \emph{layered state} if the following three conditions hold.
+\begin{enumerate}[label=(O\arabic*)]
+\item For every $v\in E_S$, the orders $<_{v^-}$ and $<_{v^+}$ agree on $\Theta(v)$.
+\item If $s\ne s'$, $\Phi_S(s)=\Phi_S(s')=v$ and $\epsilon(s)=\epsilon(s')=\epsilon$, then the two
+tacos, which are disjoint, do not interleave in $<_{v^\epsilon}$: it is not the case that
+exactly one face of one taco lies strictly between the two faces of the other.
+\item If $v=\Phi_S(s)$ and $c\in\Theta(v)$, then $c$ does not lie strictly between the two faces of
+the taco of $s$ in $<_{v^{\epsilon(s)}}$.
+\end{enumerate}
+The \emph{initial layered state} is $\emptyset$ with its unique layer order.
+\end{definition}
+
+\begin{definition}[Rigid step]\label{def:rigid}
+The data are a layered state $(S,<)$, a step $D$ with $\ell=\ell(D)$, a labeling $\mu$, and a
+choice of one component $\up$ of $\T\setminus q^{-1}(\ell)$; the other component is $\down$.
+Physically: a half-turn about $\ell$ that lifts the layers over $\up$ and lowers those over
+$\down$.
+
+\smallskip\noindent\textbf{(F)} Let $u\notin E_S\cup q^{-1}(\ell)$, and let $p,p'$ be pieces with
+$\mu(p)=1$, $\mu(p')=0$ and $u\in\Phi_S(p)\cap\Phi_S(p')$. Then
+$\pi(p')<_u\pi(p)$ if $u\in\up$, and $\pi(p)<_u\pi(p')$ if $u\in\down$.
+
+\smallskip\noindent\textbf{New order.} Let $S'=S\mathbin{\triangle}D$ and let $\Psi=\Psi_\mu$ and
+$g$ be as in Lemma~\ref{lem:result}. Each face $G$ of $S'$ is a union of pieces and points of
+$K(D)$, and $\Psi$ is injective on $G$. Let $u$ avoid the finite set
+$E_S\cup\sigma_\ell(E_S)\cup q^{-1}(\ell)$. Define $\prec_u$ on the pieces $p$ with
+$u\in\Psi(p)$ as follows:
+\begin{enumerate}[label=(\roman*)]
+\item two staying pieces: $p\prec_u p'\iff\pi(p)<_u\pi(p')$;
+\item two moving pieces: $p\prec_u p'\iff\pi(p')<_{\sigma_\ell(u)}\pi(p)$, i.e.\ the order is
+reversed;
+\item $p$ moving and $p'$ staying: $p'\prec_u p$ if $u\in\down$, and $p\prec_u p'$ if $u\in\up$.
+\end{enumerate}
+Set $G<'_{g(u)}G'$ iff $p_G\prec_u p_{G'}$, where $p_G$ is the unique piece of $G$ with
+$u\in\Psi(p_G)$. The step is \emph{rigid} if (F) holds and $<'$ extends to a layer order making
+$(S',<')$ a layered state.
+\end{definition}
+
+A history is \emph{rigidly realizable} if there are layered states $(S_i,<^i)$, starting from the
+initial one, such that each transition $(S_{i-1},<^{i-1})\to(S_i,<^i)$ is a rigid step for $D_i$,
+for some labeling and some choice of $\up$. Let
+\[
+\Prig(A):=\{\Surv(H) : H \text{ a rigidly realizable history of } A\}
+\]
+be the set of \emph{rigidly realizable surviving partitions} of $A$.
+
+\begin{lemma}\label{lem:FC}
+(F) implies (C). Consequently every step of a rigidly realizable history satisfies (C).
+\end{lemma}
+\begin{proof}
+Let $F,F',x,x'$ be as in Definition~\ref{def:C} with $w:=\Phi_S(x)=\Phi_S(x')$, and suppose
+$\mu(F)=1\ne0=\mu(F')$. Since $x,x'$ are interior points of faces, $F,F'\in\Theta(w)$ if
+$w\in E_S$, and otherwise $F,F'\in L(u)$ for all $u$ near $w$ on both sides; in both cases their
+relative order is the same on both sides of $w$ (by (O1), resp.\ local constancy). But (F)
+requires $\pi(F')<_u\pi(F)$ for $u\in\up$ near $w$ and $\pi(F)<_u\pi(F')$ for $u\in\down$ near
+$w$. Contradiction.
+\end{proof}
+
+\begin{lemma}[Simple folds]\label{lem:simple}
+Let $D=\Pi_S(\ell)$ with $D\cap S=\emptyset$. Then the image of each piece lies in one component
+of $\T\setminus q^{-1}(\ell)$, and each labeling moves exactly the pieces lying over one
+component. Hence (F) holds vacuously, and for each of the four choices of labeling and $\up$ the order
+$<'$ is determined by (i)--(iii).
+\end{lemma}
+\begin{proof}
+No ray maps into $q^{-1}(\ell)$, since $\Pi_S(\ell)\cap S=D\cap S=\emptyset$, and all interior
+points of faces mapping into $q^{-1}(\ell)$ lie in $D$. So no piece's image meets $q^{-1}(\ell)$
+in its interior. Across a point of $D$ (a transversal crossing) both the side and the label
+switch; across a ray of $S$ (a fold away from $\ell$) neither switches.
+\end{proof}
+
+\section{The configuration \texorpdfstring{$\{0,1,3,4,5,7\}\cdot\pi/4$}{A}}
+
+From now on the unit is $\pi/4$, so $\T=\mathbb{R}/8\mathbb{Z}$, and
+\[A=\{0,1,3,4,5,7\}.\]
+Let $f_k:=\arc{k-1}{k}$, $k=1,\dots,8$, be the faces of $\{0,\dots,7\}$. In the drawing
+convention where direction $0$ points up, $\{0,4\}$ is the vertical and $\{2,6\}$ the horizontal
+line. The three lines of $A$ are $\{0,4\}$, $\{1,5\}$ and $\{3,7\}$, and the straight subsets of
+$A$ are exactly the unions of these. Consider
+\begin{align*}
+H_1&=\bigl(\{0,4\},\ \{1,7\},\ \{3,5\}\bigr),\\
+H_2&=\bigl(\{1,5\},\ \{3,7\},\ \{0,2,4,6\},\ \{2,6\}\bigr),\\
+H_3&=\bigl(\{1,5\},\ \{3,7\},\ \{0,4\}\bigr).
+\end{align*}
+
+\begin{proposition}\label{prop:base}\leavevmode
+\begin{enumerate}[label=(\alph*)]
+\item $H_1,H_2,H_3$ are histories of $A$.
+\item $\Surv(H_1)=\{\{0,4\},\{1,7\},\{3,5\}\}$: one straight block and two non-straight blocks,
+which are mirror images of each other across the line $\{0,4\}$ (since $7=-1$, $5=-3$).
+$\Surv(H_2)=\Surv(H_3)=\Lambda:=\{\{0,4\},\{1,5\},\{3,7\}\}$: three straight blocks.
+\item $\cost(H_1)=\cost(H_3)=0$ and $\cost(H_2)=2$. In particular $\Lambda$ is the surviving
+partition of a history of cost $0$, namely $H_3$.
+\item Every step of $H_1$ and $H_2$ satisfies (C). Step $3$ of $H_3$ violates (C).
+\end{enumerate}
+\end{proposition}
+\begin{proof}
+We record the normalised folding maps (Definition~\ref{def:flat}) face by face.
+
+\emph{$H_1$.} $\Pi_\emptyset(q(0))=\{0,4\}=D_1$. For $S_1=\{0,4\}$:
+$\Phi=x$ on $\arc04$ and $-x$ on $\arc48$, so $\Pi_{S_1}(q(1))=\{1,7\}=D_2$.
+For $S_2=\{0,1,4,7\}$, $\Phi$ is $x,\ 2-x,\ x+2,\ -x$ on $\arc01,\arc14,\arc47,\arc78$
+respectively, so
+$\Phi(3)=\Phi(5)=7$ and $\Pi_{S_2}(q(7))=\{3,5\}=D_3$.
+
+\emph{$H_2,H_3$.} $\Pi_\emptyset(q(1))=\{1,5\}=D_1$. For $S_1=\{1,5\}$: $\Phi=x$ on $\arc15$
+and $2-x$ on $\arc59$, so $\Pi_{S_1}(q(3))=\{3,7\}=D_2$. For $S_2=\{1,3,5,7\}$:
+$\Phi=x,\ 6-x,\ x-4,\ 2-x$ on $\arc13,\arc35,\arc57,\arc79$; rays map to $1,3,1,3$, and
+$\Phi(0)=\Phi(2)=\Phi(4)=\Phi(6)=2$, so $\Pi_{S_2}(q(2))=\{0,2,4,6\}$. Hence $D_3$ is a step for
+$H_2$, and so is $\{0,4\}$ for $H_3$. For $S_3=\{0,\dots,7\}$ in $H_2$: $\Phi(k)=0$ for even $k$ and $\Phi(k)=1$ for odd $k$,
+with all faces mapping onto $\arc01$, so $\Pi_{S_3}(q(0))=\{0,2,4,6\}\supseteq D_4$.
+
+(b) and (c) are read off directly. For (d): in $H_1$ and in steps $1$--$3$ of $H_2$ we have
+$D=\Pi_S(\ell)$, so no face avoiding $D$ contains a preimage of $\ell$. In step $4$ of $H_2$,
+$\Pi_{S_3}(q(0))$ consists of rays, so no face contains one in its interior. In step $3$ of
+$H_3$, the faces $\arc13$ and $\arc57$ of $S_2$ avoid $\{0,4\}$ and contain $2$ and $6$, with
+$\Phi(2)=\Phi(6)=2\in q^{-1}(q(2))$; the labeling switches at $0$ and $4$, so these faces
+receive opposite labels.
+\end{proof}
+
+\begin{theorem}\label{thm:main}
+$H_2$ is not rigidly realizable.
+\end{theorem}
+\begin{proof}
+Steps $1$--$3$ of $H_2$ satisfy the hypothesis of Lemma~\ref{lem:simple}, so each admits exactly
+four candidate realizations (two labelings times two choices of $\up$), each determined by
+(i)--(iii). Running all $4^3=64$ combinations from the initial layered state (Appendix~\ref{app})
+yields, after step $3$, eight faces $f_1,\dots,f_8$ that all have the same image arc $W$
+(up to the global isometry $g$), of length $1$ with an endpoint in $q^{-1}(\ell_4)$. Their order $<_W$, bottom to top, is one of
+the following eight; the second column is the reversal of the first.
+\[
+\begin{array}{ll}
+f_2f_1f_6f_5\,f_4f_7f_8f_3 & f_3f_8f_7f_4\,f_5f_6f_1f_2\\
+f_4f_7f_8f_3\,f_2f_1f_6f_5 & f_5f_6f_1f_2\,f_3f_8f_7f_4\\
+f_6f_5f_2f_1\,f_8f_3f_4f_7 & f_7f_4f_3f_8\,f_1f_2f_5f_6\\
+f_8f_3f_4f_7\,f_6f_5f_2f_1 & f_1f_2f_5f_6\,f_7f_4f_3f_8
+\end{array}
+\]
+In step $4$ ($D_4=\{2,6\}$) the two labelings move $M=\{f_3,f_4,f_5,f_6\}$ or its complement.
+Since $W$ lies in a single component of $\T\setminus q^{-1}(\ell_4)$, condition (F) at any
+$u\in W$ says that the moving set is an up-set of $<_W$ (if $W\subseteq\up$) or a down-set
+(if $W\subseteq\down$). In each of the eight orders, neither $M$ nor its complement is the set of
+the four lowest faces. Hence (F) fails for every choice.
+\end{proof}
+
+\begin{remark}
+Theorem~\ref{thm:main} does not depend on whether simple folds preserve (O1)--(O3): if they do
+not, $H_2$ has no realization at all. It shows that layer data are needed, since $H_2$ passes
+(C) by Proposition~\ref{prop:base}(d). We expect $H_1$, a sequence of three simple folds, to be
+rigidly realizable, but have not written out the (O1)--(O3) check.
+\end{remark}
+
+\begin{conjecture}[Three lines]\label{conj:lines}
+$\Lambda\notin\Prig(A)$. That is, no rigidly realizable history of $A$, with any number of
+scaffold creases and in any order of steps, has the surviving blocks $\{0,4\}$, $\{1,5\}$,
+$\{3,7\}$.
+\end{conjecture}
+
+\begin{conjecture}[No straight surviving partition]\label{conj:straight}
+No partition in $\Prig(A)$ has all its blocks straight.
+\end{conjecture}
+
+\begin{remark}\label{rem:conj}\leavevmode
+\begin{enumerate}[label=(\arabic*),leftmargin=*]
+\item \emph{Relation.} Conjecture~\ref{conj:straight} implies Conjecture~\ref{conj:lines}. The
+partitions of $A$ into straight blocks are the five partitions of the set of its three lines:
+$\Lambda$, the three partitions merging two lines, and $\{A\}$.
+\item \emph{Order is free.} Both conjectures constrain only $\Surv(H)$, so they cover every order
+in which the blocks may be finally created, e.g.\ $\{0,4\}$ first, in the middle, or last.
+\item \emph{Symmetry.} The isometries $x\mapsto -x$, $x\mapsto 4-x$ and $x\mapsto x+4$ preserve
+$A$ and permute its three lines. The model is equivariant under $\Iso(\T)$ (the normalisation
+in Definition~\ref{def:flat} only changes images by a global isometry), so both conjectures are
+invariant under these symmetries.
+\item \emph{Evidence.} $H_2$ and $H_3$, the two histories with $\Surv=\Lambda$ exhibited here,
+are not rigidly realizable: $H_2$ by Theorem~\ref{thm:main}, and $H_3$ because its third step
+violates (C), hence (F) by Lemma~\ref{lem:FC}. By contrast $H_1$, which we expect to be rigidly
+realizable, has only one straight block.
+\item \emph{Status.} Histories with a given surviving partition are unbounded in length, so
+neither conjecture is a finite check. A counterexample, if one exists, can be found by
+enumerating combinatorial history types.
+\item \emph{Rigidity is essential.} Suppose instead that creases persist once made and fold angles
+vary continuously, so that unfolding a crease to angle $\pi$ does not erase it. Then $\Lambda$
+is realized trivially: fold $\{1,5\}$, fold $\{3,7\}$, unfold both to the flat sheet, fold
+$\{0,4\}$, and refold the existing creases as $\{1,7\}$ and $\{3,5\}$, as in $H_1$. Each crease
+of $A$ is created exactly once, in the blocks $\{1,5\}$, $\{3,7\}$, $\{0,4\}$. More generally,
+connectedness results for single-vertex configuration spaces (Streinu--Whiteley,
+\emph{Single-vertex origami and spherical expansive motions}, JCDCG 2004, LNCS 3742; exact
+hypotheses not re-checked) suggest that any folded state is then reachable.
+\end{enumerate}
+\end{remark}
+
+\appendix
+\section{Verification script for Theorem~\ref{thm:main}}\label{app}
+Unit arcs $\arc{a}{a+1}$ of the image carry stacks of faces (bottom to top). A fold through the
+image point $c$ moves the arcs on one side, reflects them via $a\mapsto 2c-a-1$, reverses each
+moved stack, and places it on top (over) or at the bottom (under) of the stack at the landing
+arc. The fold point of each step is the current image of a crease point of that step.
+In \texttt{choices}, \texttt{side} selects the labeling (which side moves) and \texttt{over}
+selects $\up$: the moving side is $\up$ iff \texttt{over}, matching rule (iii).
+{\footnotesize
+\begin{verbatim}
+import itertools
+def run(choices):
+    g = {k: (1, 0) for k in range(1, 9)}        # image map of f_k: x -> e*x+t (mod 8)
+    stack = {a: [a+1] for a in range(8)}        # unit arc (a,a+1) -> faces, bottom->top
+    img = lambda k, x: (g[k][0]*x + g[k][1]) % 8
+    for (pt, face), (side, over) in zip([(1,1), (3,3), (0,1)], choices):
+        c = img(face, pt)                       # fold line through image of a crease point
+        plus = lambda a: ((a - c) % 8) < 4
+        mov = {a for a in range(8) if plus(a) == (side == 0)}
+        new = {a: list(stack[a]) for a in range(8) if a not in mov}
+        for a in mov:
+            b = (2*c - a - 1) % 8
+            r = list(reversed(stack[a])); new.setdefault(b, [])
+            new[b] = new[b] + r if over else r + new[b]
+        for a in mov:
+            for k in stack[a]:
+                e, t = g[k]; g[k] = (-e, (2*c - t) % 8)
+        stack = {a: new.get(a, []) for a in range(8)}
+    return stack
+M = {3, 4, 5, 6}
+res = set()
+for ch in itertools.product(itertools.product((0,1),(0,1)), repeat=3):
+    st = run(ch); arcs = [a for a in st if st[a]]
+    assert len(arcs) == 1 and len(st[arcs[0]]) == 8   # all faces share one image arc
+    res.add(tuple(st[arcs[0]]))
+for s in sorted(res):                                # 8 orders, none admits a free block
+    print(s, set(s[:4]) in (M, set(range(1, 9)) - M))
+\end{verbatim}
+}
+The output consists of the eight orders listed in the proof of Theorem~\ref{thm:main}, each with
+the value \texttt{False}.
+
+\end{document}
