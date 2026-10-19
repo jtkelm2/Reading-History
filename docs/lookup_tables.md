@@ -91,3 +91,26 @@ paper's numbers for the running and body patterns.
   higher cost with the tables comes from core-guided expansion taking a different path, and
   neither cost is certified minimal. 070 was not diagnosed (the search timed out in the
   diagnostic run, after 13 s in the corpus run).
+
+## With the degree-6 table to k = 3
+
+`results/lookup_first_build/corpus_tables_k3.jsonl`; `comparison.md` is regenerated from it.
+
+- **Resolved:** 29. New: Marnie (315), cost 19 (not certified) in 12.6 s; the search times out
+  on it. Dutch Rabbit (048) now reaches the search's cost, 19, in 2.0 s (search: 25.9 s).
+- **Cost on the 28 resolved by both:** equal on 24; higher with the tables on 4 (016, 058,
+  070, 114).
+- **Time on those 28:** search 106.9 s, tables 113.7 s. The difference is 070, which takes
+  94.5 s with the larger degree-6 table (5.7 s without k = 3): more options make the global
+  core-guided problem slower.
+
+## Addendum: degree 8 (k ≤ 1), outside the first build
+
+`tables_deg8/` (degree 8: k = 0, 33 types, 2.9 s; k = 1, 1244 types, 249 s; both complete),
+used together with `tables/`; `results/lookup_first_build/corpus_tables_deg8.jsonl`.
+
+- **Resolved:** 34, five more than without degree 8: Pig (045), 4 Stripes 1 (091), Horned Owl
+  (096), Fox (113), Sus (186). Their costs equal the search's except the Horned Owl's (21 vs 16).
+- **Still failing:** 7 patterns with vertices of degree 12, 14, 16 or 20 (including the Gentle
+  Dragon, degree 12); Butterfly Base (018), whose degree-8 vertex has no history with at most
+  one hidden ray; the 5 patterns of degree ≤ 6 above; 304 (timeout in both).

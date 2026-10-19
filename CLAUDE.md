@@ -52,6 +52,9 @@ cases.
 - **Exact local search (src/exact_local.py).** Decides whether one vertex has a local history
   with k hidden rays in arbitrary directions: fixed cyclic order + step sequence makes (L),
   flatness and (C) linear (z3 over reals and integers), DFS over steps with pruning.
+- **Lookup tables (src/lookup.py, branch lookup-tables).** `build n k DIR` enumerates history types
+  (symbolic visible directions, no hidden-only steps) into `DIR/deg{n}_k{k}.json`; `Table` and
+  `options_for` replace `Pattern.options` at runtime (`--table=DIR`). See docs/lookup_tables.md.
 - **Tools.** `tools/common.py`: `resolve(path, geometry='found'|'shortest')`, `geometries`
   (all minimal geometries, paths included).
 
