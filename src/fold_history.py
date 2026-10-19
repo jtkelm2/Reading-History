@@ -794,14 +794,16 @@ def main(argv):
     if table:                         # local histories from the lookup tables only (src/lookup.py)
         import lookup
         tl = time.monotonic(); T = lookup.Table(table); summary['table_load_s'] = round(time.monotonic() - tl, 2)
-        opt, spent = lookup.options_for(T, P), [0.0]
-        def timed(p, k, c=0):
-            t1 = time.monotonic(); r = opt(p, k, c); spent[0] += time.monotonic() - t1; return r
-        P.options = timed
+        opt = lookup.options_for(T, P)
+    else: opt = P.options
+    spent = [0.0]                     # time spent producing local histories, in either mode
+    def timed(p, k, c=0):
+        t1 = time.monotonic(); r = opt(p, k, c); spent[0] += time.monotonic() - t1; return r
+    P.options = timed
     res = solve(P, log=lambda s: None if analyse_it is False else print(s, flush=True), budget=budget)
-    summary['status'] = res['status']
+    summary['status'] = res['status']; summary['local_s'] = round(spent[0], 2)
     if table:
-        summary['local_s'] = round(spent[0], 2); summary['table'] = T.stats
+        summary['table'] = T.stats
         if res['status'] == 'local fail': summary['first_degree'] = len(P.H[res['first']])
     for k in ('hidden', 'excess_lines', 'collapses', 'cost', 'lower_bound', 'certified_minimal', 'rounds', 'lazy_refinements', 'expanded', 'core', 'first'):
         if k in res: summary[k] = res[k]
