@@ -31,45 +31,62 @@ class Need(Exception):
     def __init__(self, form, signs): self.form, self.signs = form, signs
 
 
+DEN = 4                          # Lin numerators are integers over DEN (midpoints halve once at most)
+
+
 class Lin:
-    """An affine form sum(c_i b_i) + k with rational coefficients (directions in units of pi)."""
+    """An affine form (sum(c_i b_i) + k) / DEN with integer numerators (directions in units of pi)."""
     __slots__ = ('c', 'k')
-    def __init__(self, c, k=Fr(0)): self.c, self.k = tuple(c), Fr(k)
+    def __init__(self, c, k=0): self.c, self.k = tuple(c), k
     def __add__(self, o):
-        if not isinstance(o, Lin): o = Lin((0,) * len(self.c), o)
+        if not isinstance(o, Lin): return Lin(self.c, self.k + _num(o))
         return Lin(tuple(a + b for a, b in zip(self.c, o.c)), self.k + o.k)
     __radd__ = __add__
     def __neg__(self): return Lin(tuple(-a for a in self.c), -self.k)
     def __sub__(self, o): return self + (-o if isinstance(o, Lin) else -Fr(o))
     def __rsub__(self, o): return (-self) + o
-    def __mul__(self, t): return Lin(tuple(a * t for a in self.c), self.k * t)
+    def __mul__(self, t):
+        assert isinstance(t, int), t
+        return Lin(tuple(a * t for a in self.c), self.k * t)
     __rmul__ = __mul__
+    def half(self):
+        assert all(a % 2 == 0 for a in self.c) and self.k % 2 == 0, 'denominator DEN too small'
+        return Lin(tuple(a // 2 for a in self.c), self.k // 2)
     def is_const(self): return not any(self.c)
-    def value(self, b): return sum(c * x for c, x in zip(self.c, b)) + self.k
-    def key(self): return (self.c, self.k)
+    def num_at(self, P, L):
+        """The numerator of the value at the point b_i = P_i / L, over DEN * L."""
+        return sum(c * x for c, x in zip(self.c, P)) + self.k * L
     def __repr__(self):
-        t = ['%s*b%d' % (c, i + 1) for i, c in enumerate(self.c) if c] + ([str(self.k)] if self.k or not any(self.c) else [])
-        return ' + '.join(t)
+        t = ['%d*b%d' % (c, i + 1) for i, c in enumerate(self.c) if c] + ([str(self.k)] if self.k or not any(self.c) else [])
+        return '(' + ' + '.join(t) + ')/%d' % DEN
+
+
+def _num(x):
+    """A rational constant (in units of pi) as a numerator over DEN."""
+    v = Fr(x) * DEN
+    assert v.denominator == 1, x
+    return int(v)
 
 
 class Sym:
     """Exact affine forms; signs decided by an oracle."""
     def __init__(self, m, oracle):
         self.m, self.oracle = m, oracle
-        self.ZERO = Lin((Fr(0),) * m); self.PI = Lin((Fr(0),) * m, 1); self.TWO_PI = Lin((Fr(0),) * m, 2)
-    def var(self, i): return Lin(tuple(Fr(int(j == i)) for j in range(self.m)))
-    def const(self, k): return Lin((Fr(0),) * self.m, Fr(k))
+        self.ZERO = Lin((0,) * m); self.PI = Lin((0,) * m, DEN); self.TWO_PI = Lin((0,) * m, 2 * DEN)
+    def var(self, i): return Lin(tuple(DEN if j == i else 0 for j in range(self.m)))
+    def const(self, k): return Lin((0,) * self.m, _num(k))
     def sgn(self, x):
         if not isinstance(x, Lin): x = self.const(x)
         return self.oracle.sign(x)
     def floor_div(self, x, period):
         """The integer q with 0 <= x - q period < period, decided by sign queries."""
-        p = period.k if isinstance(period, Lin) else Fr(period)
-        q = math.floor(self.oracle.witness(x) / p)
-        lo, hi = self.sgn(x - q * p), self.sgn(x - (q + 1) * p)
+        p = period.k                                   # period is a constant Lin: PI or TWO_PI
+        P, L = self.oracle.point()
+        q = x.num_at(P, L) // (p * L)
+        lo, hi = self.sgn(x - Lin((0,) * len(x.c), q * p)), self.sgn(x - Lin((0,) * len(x.c), (q + 1) * p))
         assert lo >= 0 and hi < 0, 'oracle inconsistent'
         return q
-    def half(self, x): return x * Fr(1, 2)
+    def half(self, x): return x.half()
 
 
 # ---------------------------------------------------------------- functions for both
