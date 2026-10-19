@@ -58,7 +58,7 @@ choices of labelling and up-side at every step, which is a search at runtime. De
 |---|---|---|---|---|
 | 2 | 0 / 1 / 2 | 1 / 0 / 0 | < 1 s | yes |
 | 4 | 0 / 1 / 2 / 3 / 4 | 1 / 2 / 12 / 82 / 556 | 0.0 / 0.1 / 1.4 / 19.7 / 303.8 s | yes |
-| 6 | 0 / 1 / 2 | 4 / 54 / 688 | 0.1 / 4.5 / 144.5 s | yes |
+| 6 | 0 / 1 / 2 / 3 | 4 / 54 / 688 / 9476 | 0.1 / 4.5 / 144.5 / 4528.4 s | yes |
 
 Degree 2 has no types with hidden rays: its first step uses both visible rays, so no later step
 has an anchor. All builds: z3 4.16, one core, `nice -n 19`.
@@ -66,9 +66,9 @@ has an anchor. All builds: z3 4.16, one core, `nice -n 19`.
 ## Validation
 
 `tools/validate_table.py tables` compares, at every vertex shape of degree ≤ 6 in the corpus and the
-paper's examples (74 shapes, each once up to rotation and reflection) and every depth built, the
+paper's examples (66 shapes, each once up to rotation and reflection) and every depth built, the
 tables' histories with those of the local search, restricted to histories with no hidden-only
-step. Result: 265 of 265 comparisons equal. `tools/verify_examples.py --table=tables` reproduces the
+step. Result: 299 of 299 comparisons equal (with the degree-6 table to k = 3). `tools/verify_examples.py --table=tables` reproduces the
 paper's numbers for the running and body patterns.
 
 ## First results on the corpus
