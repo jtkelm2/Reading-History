@@ -73,8 +73,47 @@ def img_arc(f, a, b):
     return (x, y) if e == 1 else (y, x)
 
 
-def step(st, D, mu0, up):
-    """The layered state after the rigid step D with labelling mu0 and up side up, or None."""
+def runs(R, D, mu):
+    """The moving runs of a step: maximal cyclic sequences of consecutive moving pieces (indices
+    into the pieces (R[k], R[k+1])). Consecutive pieces of a run meet at a point of S not in D."""
+    n = len(R); out = []
+    starts = [k for k in range(n) if mu[k] and not mu[(k - 1) % n]]
+    for k0 in starts:
+        run, k = [], k0
+        while mu[k] and (not run or k != k0):
+            run.append(k); k = (k + 1) % n
+        out.append(run)
+    return out
+
+
+def sense_options(st, D, mu0):
+    """Sense assignments allowed with labelling mu0: each moving run either keeps the common sense
+    0, or is split at one spine (a point between two consecutive pieces of the run) into two halves
+    with opposite senses (either half first). Yields a list sense[k] over all pieces."""
+    import itertools
+    S = st.S; D = [fh.nrm(d) for d in D]; R = uniq(list(S) + D); n = len(R)
+    inD = lambda x: any(fh.eq(x, d) for d in D)
+    mu, cur = [], mu0
+    for k in range(n):
+        mu.append(cur)
+        if inD(R[(k + 1) % n]): cur ^= 1
+    per_run = []
+    for run in runs(R, D, mu):
+        opts = [None] + [(j, o) for j in range(1, len(run)) for o in (0, 1)]
+        per_run.append((run, opts))
+    for choice in itertools.product(*[opts for _, opts in per_run]):
+        sense = [0] * n
+        for (run, _), c in zip(per_run, choice):
+            if c is None: continue
+            j, o = c
+            for i, k in enumerate(run): sense[k] = o if i < j else 1 - o
+        yield sense
+
+
+def step(st, D, mu0, up, sense=None):
+    """The layered state after the step D with labelling mu0, up side up and senses (default: all
+    pieces sense 0, i.e. the rigid half-turn of flatvertex Definition 2.2), or None.
+    A moving piece with sense 0 is lifted over the up side, one with sense 1 over the other side."""
     S = st.S
     D = [fh.nrm(d) for d in D]
     R = uniq(list(S) + D)
@@ -90,6 +129,9 @@ def step(st, D, mu0, up):
     lam = st.image(D[0]) % PI
     L2 = [lam, fh.nrm(lam + PI)]
     uparc = (L2[0], L2[1]) if up == 0 else (L2[1], L2[0])
+    downarc = (uparc[1], uparc[0])
+    if sense is None: sense = [0] * n
+    U = [uparc if not sense[k] else downarc for k in range(n)]           # the side each piece is lifted over
     sig = lambda x: fh.nrm(2 * lam - x)
     phi_piece = [img_arc(st.phis[parent[k]], *pieces[k]) for k in range(n)]
     def psi_piece(k):
@@ -97,18 +139,20 @@ def step(st, D, mu0, up):
         return (a, b) if not mu[k] else (sig(b), sig(a))
     psi = [psi_piece(k) for k in range(n)]
     ES = st.E()
-    # (F)
+    # (F') moving against staying, (F'') moving pieces of opposite senses against each other
     for a, b in arcs_of(uniq(ES + L2)):
         u = mid(a, b)
         P = [k for k in range(n) if inside(u, phi_piece[k])]
         mov = [k for k in P if mu[k]]; sta = [k for k in P if not mu[k]]
-        if not (mov and sta): continue
+        if not mov: continue
         pos = {f: i for i, f in enumerate(st.order_at(u))}
-        on_up = inside(u, uparc)
         for p in mov:
+            lifted = inside(u, U[p])
             for q in sta:
-                if on_up and not pos[parent[q]] < pos[parent[p]]: return None
-                if not on_up and not pos[parent[p]] < pos[parent[q]]: return None
+                if lifted and not pos[parent[q]] < pos[parent[p]]: return None
+                if not lifted and not pos[parent[p]] < pos[parent[q]]: return None
+            for q in mov:
+                if sense[q] != sense[p] and lifted and not pos[parent[q]] < pos[parent[p]]: return None
     # new order, in the coordinates of Psi
     S2 = uniq([x for x in S if not inD(x)] + [d for d in D if not any(fh.eq(d, x) for x in S)])
     new = State(S2, None)
@@ -117,14 +161,16 @@ def step(st, D, mu0, up):
     for a, b in arcs_of(uniq(ES + [sig(x) for x in ES] + L2)):
         u = mid(a, b)
         P = [k for k in range(n) if inside(u, psi[k])]
-        sta = [k for k in P if not mu[k]]; mov = [k for k in P if mu[k]]
+        sta = [k for k in P if not mu[k]]
+        below = [k for k in P if mu[k] and inside(u, U[k])]             # arrived from underneath
+        above = [k for k in P if mu[k] and not inside(u, U[k])]         # arrived over the top
         if sta:
             pos = {f: i for i, f in enumerate(st.order_at(u))}
             sta.sort(key=lambda k: pos[parent[k]])                       # rule (i)
-        if mov:
+        if below or above:
             pos = {f: i for i, f in enumerate(st.order_at(sig(u)))}
-            mov.sort(key=lambda k: -pos[parent[k]])                      # rule (ii): reversed
-        seq = (mov + sta) if inside(u, uparc) else (sta + mov)           # rule (iii)
+            below.sort(key=lambda k: -pos[parent[k]]); above.sort(key=lambda k: -pos[parent[k]])  # rule (ii)
+        seq = below + sta + above                                        # rule (iii)
         order = tuple(G[k] for k in seq)
         if len(set(order)) != len(order): raise AssertionError('Psi is not injective on a face')
         fine.append((a, b, order))
@@ -202,18 +248,21 @@ def layered_ok(st):
     return True
 
 
-def realizable(steps, limit=None):
-    """Some choice of labelling and up side at every step makes all steps rigid.
-    steps: list of lists of directions (rays made or erased by each step).
-    Returns (True, choices) or (False, None)."""
+def realizable(steps, reverse=False):
+    """Some choice of labelling and up side (and, if reverse, of senses: reverse folds) at every
+    step makes all steps rigid. steps: list of lists of directions (rays made or erased by each
+    step). Returns (True, choices) or (False, None); a choice is (mu0, up, split) with split True
+    when some run is split at a spine."""
     def dfs(st, i, ch):
         if i == len(steps): return list(ch)
         for mu0 in (0, 1):
+            senses = list(sense_options(st, steps[i], mu0)) if reverse else [None]
             for up in (0, 1):
-                nst = step(st, steps[i], mu0, up)
-                if nst is not None:
-                    r = dfs(nst, i + 1, ch + [(mu0, up)])
-                    if r is not None: return r
+                for sense in senses:
+                    nst = step(st, steps[i], mu0, up, sense)
+                    if nst is not None:
+                        r = dfs(nst, i + 1, ch + [(mu0, up, bool(sense and any(sense)))])
+                        if r is not None: return r
         return None
     r = dfs(initial(), 0, [])
     return (r is not None, r)
@@ -223,5 +272,6 @@ if __name__ == '__main__':
     u = PI / 4
     H = {'H1': [(0, 4), (1, 7), (3, 5)], 'H2': [(1, 5), (3, 7), (0, 2, 4, 6), (2, 6)], 'H3': [(1, 5), (3, 7), (0, 4)]}
     for name, h in H.items():
-        ok, ch = realizable([[k * u for k in st] for st in h])
-        print(name, 'rigidly realizable' if ok else 'not rigidly realizable', ch or '')
+        for rev in (False, True):
+            ok, ch = realizable([[k * u for k in st] for st in h], reverse=rev)
+            print(name, 'with reverse folds' if rev else 'half-turns only   ', 'realizable' if ok else 'not realizable', ch or '')

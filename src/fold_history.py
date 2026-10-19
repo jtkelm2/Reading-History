@@ -4,7 +4,8 @@ Usage: python3 src/fold_history.py [--out=PREFIX] [--budget=SECONDS] [--tol=RADI
                                    [--geometry=shortest|found] [--table=DIR] pattern.fold
 --table=DIR takes local histories from the lookup tables in DIR (src/lookup.py) instead of
 searching for them at each vertex; vertices not covered by the tables get no options.
---rigid (with --table) keeps only rigidly realizable local histories (src/rigid.py).
+--rigid[=reverse|halfturn] (with --table) keeps only local histories realizable with rigid half-turns
+and reverse folds (default), or with half-turns only (src/rigid.py).
 The analysis fixes the minimal geometry whose cancelled segments are shortest (default), or the one
 the solver found.
 
@@ -778,7 +779,7 @@ def main(argv):
     for a in argv:
         if a.startswith('--geometry='): geometry = a[11:]; continue
         if a.startswith('--table='): table = a[8:]; continue
-        if a == '--rigid': rigid_only = True; continue
+        if a.startswith('--rigid'): rigid_only = a[8:] or 'reverse'; continue
         if a.startswith('--out='): out = a[6:]
         elif a.startswith('--budget='): budget = float(a[9:])
         elif a.startswith('--tol='): tols = (float(a[6:]),)

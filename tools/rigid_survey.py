@@ -3,12 +3,15 @@
 For every vertex shape of the given patterns (each shape once, up to rotation and reflection) and
 every number k of hidden rays the tables cover, count the histories the tables give at the vertex
 and those that are rigidly realizable.  Prints one JSON line per shape, then a summary.
-Usage: python3 tools/rigid_survey.py TABLEDIR pattern.fold [...]"""
+Usage: python3 tools/rigid_survey.py TABLEDIR [--reverse] pattern.fold [...]
+--reverse also allows reverse folds."""
 import sys, json, time
 from common import fh, resolve_tol
 sys.path.insert(0, str(fh.__file__).rsplit('/', 1)[0])
 import lookup, rigid
 
+REV = '--reverse' in sys.argv
+sys.argv = [a for a in sys.argv if a != '--reverse']
 T = lookup.Table(sys.argv[1])
 kmax = {}
 for m in T.meta: kmax[m['n']] = max(kmax.get(m['n'], -1), m['k'])
@@ -31,7 +34,7 @@ for path in sys.argv[2:]:
             ok = 0
             for h in hs:
                 steps = [[dirs[x] if isinstance(x, int) else x[0][1] for x in st] for st in h]
-                ok += rigid.realizable(steps)[0]
+                ok += rigid.realizable(steps, reverse=REV)[0]
             if hs: row['by_k'][k] = [len(hs), ok]
         row['seconds'] = round(time.monotonic() - t0, 2)
         rows.append(row); print(json.dumps(row), flush=True)

@@ -225,7 +225,8 @@ def build(n, k, outdir, seconds):
 # ---------------------------------------------------------------- runtime
 class Table:
     def __init__(self, outdir, rigid=False):
-        """rigid: keep only histories that are rigidly realizable at the vertex (src/rigid.py)."""
+        """rigid: False, or 'halfturn' / 'reverse': keep only histories realizable at the vertex with
+        rigid half-turns, or with half-turns and reverse folds (src/rigid.py)."""
         self.rigid = rigid
         self.by_n = {}; self.meta = []
         for fn in sorted(os.listdir(outdir)):
@@ -251,16 +252,16 @@ class Table:
             if all(v in sat for v in t['req']):
                 self.stats['replays'] += 1
                 h = replay(t, a)
-                if h is not None and self.rigid and not rigid_ok(t, a, h): self.stats['not_rigid'] += 1; continue
+                if h is not None and self.rigid and not rigid_ok(t, a, h, self.rigid == 'reverse'): self.stats['not_rigid'] += 1; continue
                 if h is not None: out.append((t, h))
         self.cache[key] = out
         return out
 
 
-def rigid_ok(t, a, h):
+def rigid_ok(t, a, h, reverse=False):
     import rigid
     d = [a[r[1]] if r[0] == 'v' else h[r[1]] for r in t['rays']]
-    return rigid.realizable([[d[j] for j in T] for T in t['steps']])[0]
+    return rigid.realizable([[d[j] for j in T] for T in t['steps']], reverse=reverse)[0]
 
 
 def replay(t, a):
