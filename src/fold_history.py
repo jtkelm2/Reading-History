@@ -4,6 +4,7 @@ Usage: python3 src/fold_history.py [--out=PREFIX] [--budget=SECONDS] [--tol=RADI
                                    [--geometry=shortest|found] [--table=DIR] pattern.fold
 --table=DIR takes local histories from the lookup tables in DIR (src/lookup.py) instead of
 searching for them at each vertex; vertices not covered by the tables get no options.
+--rigid (with --table) keeps only rigidly realizable local histories (src/rigid.py).
 The analysis fixes the minimal geometry whose cancelled segments are shortest (default), or the one
 the solver found.
 
@@ -772,11 +773,12 @@ def report(P, folds, lt, paths, collapsed, out):
 
 
 def main(argv):
-    out, budget, tols, analyse_it, geometry, table = None, 300.0, (1e-6, 1e-4, 5e-4, 2e-3), True, 'shortest', None
+    out, budget, tols, analyse_it, geometry, table, rigid_only = None, 300.0, (1e-6, 1e-4, 5e-4, 2e-3), True, 'shortest', None, False
     args = []
     for a in argv:
         if a.startswith('--geometry='): geometry = a[11:]; continue
         if a.startswith('--table='): table = a[8:]; continue
+        if a == '--rigid': rigid_only = True; continue
         if a.startswith('--out='): out = a[6:]
         elif a.startswith('--budget='): budget = float(a[9:])
         elif a.startswith('--tol='): tols = (float(a[6:]),)
@@ -793,7 +795,7 @@ def main(argv):
         summary.update(status='not flat-foldable', vertices=notflat); print(json.dumps(summary)); return
     if table:                         # local histories from the lookup tables only (src/lookup.py)
         import lookup
-        tl = time.monotonic(); T = lookup.Table(table); summary['table_load_s'] = round(time.monotonic() - tl, 2)
+        tl = time.monotonic(); T = lookup.Table(table, rigid_only); summary['table_load_s'] = round(time.monotonic() - tl, 2)
         opt = lookup.options_for(T, P)
     else: opt = P.options
     spent = [0.0]                     # time spent producing local histories, in either mode

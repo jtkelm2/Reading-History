@@ -114,3 +114,30 @@ used together with `tables/`; `results/lookup_first_build/corpus_tables_deg8.jso
 - **Still failing:** 7 patterns with vertices of degree 12, 14, 16 or 20 (including the Gentle
   Dragon, degree 12); Butterfly Base (018), whose degree-8 vertex has no history with at most
   one hidden ray; the 5 patterns of degree ≤ 6 above; 304 (timeout in both).
+
+## Rigid realizability of the tables' histories
+
+`src/rigid.py` implements flatvertex.tex, Definitions 2.1–2.2. Checks against that note: H₁ is
+rigidly realizable (the note expected this but had not checked it); H₂ and H₃ are not; after steps
+1–3 of H₂ all 64 choice combinations survive and give exactly the eight layer orders in the proof
+of Theorem 2.3. Erasing steps also pass positive tests (fold in half and unfold; fold twice, unfold
+both).
+
+Survey (`tools/rigid_survey.py tables …`, `results/lookup_first_build/rigid_survey.jsonl`): at the
+66 vertex shapes of degree ≤ 6 in the corpus and examples, the histories the tables give, and how
+many are rigidly realizable:
+
+| hidden rays k | 0 | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|---|
+| histories | 54 | 111 | 608 | 3418 | 655 |
+| rigidly realizable | 49 | 0 | 10 | 0 | 0 |
+
+22 of the 66 shapes have no rigidly realizable history within the tables, among them v\* of the
+running pattern and p± of the body pattern; with `--rigid`, both examples end in `local fail`.
+
+The reason, worked out at v\*: before its third step ({225° made, hidden 0° erased}), in every
+reachable stack the two faces that must move together are either the middle two layers or the top
+and bottom layers. That is an inside or an outside reverse fold. A rigid half-turn moves a block
+of layers above or below the staying ones, so it cannot do either. Cancellation in the tables is
+mostly of this kind, so rigidity as defined in flatvertex rejects it. Using rigidity as a filter
+needs a layered model of reverse folds first.

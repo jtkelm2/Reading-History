@@ -224,7 +224,9 @@ def build(n, k, outdir, seconds):
 
 # ---------------------------------------------------------------- runtime
 class Table:
-    def __init__(self, outdir):
+    def __init__(self, outdir, rigid=False):
+        """rigid: keep only histories that are rigidly realizable at the vertex (src/rigid.py)."""
+        self.rigid = rigid
         self.by_n = {}; self.meta = []
         for fn in sorted(os.listdir(outdir)):
             if not fn.endswith('.json'): continue
@@ -233,7 +235,7 @@ class Table:
                 t['req'] = [tuple(v) for v in t['req']]
                 self.by_n.setdefault(t['n'], []).append(t)
         self.vectors = {n: sorted({v for t in ts for v in t['req']}) for n, ts in self.by_n.items()}
-        self.cache = {}; self.stats = {'lookups': 0, 'cache_hits': 0, 'replays': 0}
+        self.cache = {}; self.stats = {'lookups': 0, 'cache_hits': 0, 'replays': 0, 'not_rigid': 0}
 
     def valid(self, a):
         """Valid (type, hidden directions) at the vertex with visible directions a (a[0] = 0)."""
@@ -249,9 +251,16 @@ class Table:
             if all(v in sat for v in t['req']):
                 self.stats['replays'] += 1
                 h = replay(t, a)
+                if h is not None and self.rigid and not rigid_ok(t, a, h): self.stats['not_rigid'] += 1; continue
                 if h is not None: out.append((t, h))
         self.cache[key] = out
         return out
+
+
+def rigid_ok(t, a, h):
+    import rigid
+    d = [a[r[1]] if r[0] == 'v' else h[r[1]] for r in t['rays']]
+    return rigid.realizable([[d[j] for j in T] for T in t['steps']])[0]
 
 
 def replay(t, a):
