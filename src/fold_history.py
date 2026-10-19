@@ -414,7 +414,7 @@ def solve(P, log=print, budget=600):
             if time.time() - t0 > budget: return {'status': 'timeout', 'rounds': rounds}
             continue
         if r != z3.sat and r != z3.unsat:
-            return {'status': 'timeout' if time.time() - t0 >= budget else 'unknown', 'rounds': rounds}
+            return {'status': 'timeout' if time.time() - t0 >= budget - 1 else 'unknown', 'rounds': rounds}
         core = [M.track[c] for c in M.s.unsat_core()]
         grown = []
         for p in core:

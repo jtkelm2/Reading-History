@@ -470,7 +470,7 @@ By Lemma~\ref{lem:cancel}, a move can erase an existing crease, and the erased c
 \end{figure}
 
 \begin{example}[A staircase]\label{ex:stair}
-Take the vertex of Komatsu's Horned Owl with visible rays at $22.5^\circ$, $112.5^\circ$, $135^\circ$ and $225^\circ$ (Figure~\ref{fig:stair}). No two are collinear, so by Corollary~\ref{cor:wedge}(4) there is no history without cancellations. The history in the figure uses three hidden rays. Step~1 is a line. In each later step the counterclockwise wedge between the two switch rays contains exactly one ray of the current state, the one made just before, and the step is its reflection: $22.5+67.5=2\cdot45$, $45+90=2\cdot67.5$, $67.5+112.5=2\cdot90$, $90+135=2\cdot112.5$. Each step after the second erases the hidden ray made two steps earlier, and the state ends with the four visible rays. An exhaustive search over hidden rays at multiples of $22.5^\circ$ finds no history with fewer than three.
+Take the vertex of Komatsu's Horned Owl with visible rays at $22.5^\circ$, $112.5^\circ$, $135^\circ$ and $225^\circ$ (Figure~\ref{fig:stair}). No two are collinear, so by Corollary~\ref{cor:wedge}(4) there is no history without cancellations. The history in the figure uses three hidden rays. Step~1 is a line. In each later step the counterclockwise wedge between the two switch rays contains exactly one ray of the current state, the one made just before, and the step is its reflection: $22.5+67.5=2\cdot45$, $45+90=2\cdot67.5$, $67.5+112.5=2\cdot90$, $90+135=2\cdot112.5$. Each step after the second erases the hidden ray made two steps earlier, and the state ends with the four visible rays. The exact search of Section~\ref{sec:exact} finds no history with fewer than three hidden rays in directions distinct from each other and from the visible rays, whatever those directions are.
 \end{example}
 
 \subsection{The history pattern}
@@ -517,7 +517,7 @@ The cancelled segment runs from $\vstar$ to the boundary point $(8,4)$ without m
 \end{proposition}
 
 \begin{proof}
-No two rays at $\vstar$ are collinear, so Corollary~\ref{cor:wedge}(4) excludes histories without cancellations. Enumerating the hidden directions in units of $\pi/32$ and the step sequences (the computation of Section~\ref{sec:compute}) leaves only the history shown. Its steps can be checked by hand.
+No two rays at $\vstar$ are collinear, so Corollary~\ref{cor:wedge}(4) excludes histories without cancellations. With one hidden ray $h$, every step that contains $h$ contains a visible ray as well, since steps have even size. So $h$ is a preimage of the image line of a visible ray, and the enumeration of Section~\ref{sec:local-search}, which tries every such preimage, is complete here. It leaves only the history shown. Its steps can be checked by hand.
 \begin{itemize}
 \item The first step is a line, $32$ and $0$.
 \item The wedge from $12$ to $52$ contains the earlier ray $32$ and the later ray $40$; $12+52=64\equiv2\cdot32\pmod{32}$.
@@ -531,10 +531,10 @@ Read as folding history: the horizontal crease $A^0$ along $y=4$ once ran to the
 \section{Resolutions, folds and the forced order}\label{sec:global}
 
 \begin{definition}\label{def:resolution}
-A \emph{resolution} of a crease pattern $\mathcal P$ is a history pattern for $\mathcal P$ (Definition~\ref{def:historypattern}). Its \emph{geometry} is its set of cancelled segments. Its \emph{cost} is the pair $(\kappa,\eta)$, compared lexicographically: $\kappa$ is the total cost of the multi-line moves of Section~\ref{sec:collapse} ($0$ if there are none), and $\eta$ is the number of hidden rays at vertices of $\mathcal P$. A resolution is \emph{minimal} if no resolution has smaller cost.
+A \emph{resolution} of a crease pattern $\mathcal P$ is a history pattern for $\mathcal P$ (Definition~\ref{def:historypattern}). Its \emph{geometry} is its set of cancelled segments. Its \emph{cost} is the pair $(\kappa,\eta)$, compared lexicographically: $\kappa$ is the total cost of the collapse steps of Section~\ref{sec:collapse} over all vertices ($0$ if there are none), and $\eta$ is the number of ends of cancelled segments that lie at vertices of $\mathcal P$. A resolution is \emph{minimal} if no resolution has smaller cost.
 \end{definition}
 
-Counting hidden rays at visible vertices counts a cancelled segment once for each end that lies at a vertex of $\mathcal P$. This rewards segments that join two vertices that each need one.
+A segment that joins two vertices of $\mathcal P$ counts twice, once at each end, and a segment that passes through a vertex of $\mathcal P$ is not counted there.
 
 Fix a geometry. Every order that makes it a resolution determines, at each vertex, which creases are made in the same step. We read the answers to (Q1) and (Q2) off what all these orders have in common.
 
@@ -723,7 +723,7 @@ Let a move replace $f$ by $g\circ f$ on a face $F$ and by $g'\circ f$ on an adja
 (1) Before the move $f|_{F'}=f|_F$, and afterwards \eqref{eq:fold} requires $g'f|_{F'}=gf|_F\circ\rho_e$. Hence $g^{-1}g'=f|_F\,\rho_e\,f|_F^{-1}$, the reflection in the line $f(e)$. (2) Before the move $f|_{F'}=f|_F\rho_e$; afterwards $g'f|_{F'}=gf|_F\rho_e$. Hence $g'=g$.
 \end{proof}
 
-At a vertex, then, the new creases of a move map onto a set of lines through the image of $v$, one for each relative isometry $g^{-1}g'$ that occurs. We call the number of these lines the \emph{width} of the move. A single-line move has width $1$, and a move of width $w$ costs $w-1$. A \emph{collapse step} at $v$ is any set $T$ of new rays such that $S\cup T$ is flat; its width is the number of distinct lines among the images of $T$. Allowing collapse steps makes every flat vertex resolvable in one step, which is why they carry a cost.
+At a vertex, then, the new creases of a move map onto a set of lines through the image of $v$, one for each relative isometry $g^{-1}g'$ that occurs. We call the number of these lines the \emph{width} of the move; a single-line move has width $1$. A \emph{collapse step} at $v$ is any set $T$ of an even number of visible rays not yet made such that $S\cup T$ is flat. Its width $w$ is the number of distinct lines among the images of $T$, and its cost is $\max(w-1,1)$: the $w-1$ fold lines it uses beyond one, and at least $1$, because a collapse step is not required to satisfy (C). Allowing collapse steps makes every flat vertex resolvable in one step, which is why they carry a cost.
 
 \begin{figure}[t]
 \centering
@@ -762,7 +762,7 @@ At a vertex, then, the new creases of a move map onto a set of lines through the
 \end{figure}
 
 \begin{example}[A crossover gadget]
-The crossover of Figure~\ref{fig:crossover} has four interior vertices, each of degree $4$ with no collinear pair. By Corollary~\ref{cor:wedge}(4) none of them has a history without cancellations. Our search finds none with at most four hidden rays either (Section~\ref{sec:compute} describes which fold lines it tries). The minimal resolution the computation returns makes each vertex by one collapse of width $4$, at a total cost of $12$.
+The crossover of Figure~\ref{fig:crossover} has four interior vertices, each of degree $4$ with no collinear pair. By Corollary~\ref{cor:wedge}(4) none of them has a history without cancellations. The exact search of Section~\ref{sec:exact} finds none with at most four hidden rays in directions distinct from each other and from the visible rays, whatever those directions are. It was run at one vertex; the four vertices are congruent up to rotation and reflection, under which local histories are invariant. The minimal resolution the computation returns makes each vertex by one collapse of width $4$, at a total cost of $12$.
 \end{example}
 
 The example raises the main open question.
@@ -772,6 +772,27 @@ Does every flat vertex have a local history with cancellations, using single-lin
 \end{question}
 
 If the answer is yes, collapses are never necessary, only cheaper. The question is not settled by an argument about orbits of directions. A step that creates only hidden rays may use a fold line in any direction, so the directions available at a vertex are not confined to those generated by its visible rays. Example~\ref{ex:stair} shows that some vertices with no collinear rays do have such histories.
+An argument about the group the directions generate does, however, constrain the histories of a vertex like the crossover's. For a state $S$ let $G(S)\subset\R$ be the subgroup generated by $\pi$ and the differences of the directions in $S$.
+
+\begin{lemma}\label{lem:group}
+Let a single-line step $T$ lead from a flat state $S$ to $S'=(S\cup T)\setminus(T\cap S)$, and let $\lambda$ be its fold line. Then $S'$ is flat and the images of all rays of $T$ under the folding maps of $S'$ lie on $\lambda$. If $T$ makes at least one ray, then $G(S)\subseteq G(S')$; if it also erases at least one, $G(S)=G(S')$.
+\end{lemma}
+
+\begin{proof}
+Let $U=S\cup T$, and walk around $v$ through the sectors of $U$, starting in a sector that lies in a sector of $S$ and of $S'$. As in the proof of Lemma~\ref{lem:flatext}, crossing a ray $t\in T$ inside a sector of $S$ with map $\varphi$ multiplies on the left by $\sigma_{\varphi(t)}=\sigma_\lambda$; so the maps of $U$ are $\sigma_\lambda^{c}\circ\varphi$, with $\varphi$ the corresponding map of $S$ and $c$ the number of rays of $T\setminus S$ crossed so far. Hence every ray of $T$ has its image under the maps of $U$ on $\lambda$, because $\sigma_\lambda$ fixes $\lambda$. Crossing a ray $t\in T\cap S$ therefore also multiplies on the left by $\sigma_\lambda$, and the maps of $U$ are $\sigma_\lambda^{d}\circ\varphi'$, with $\varphi'$ the corresponding map of $S'$ and $d$ the number of rays of $T\cap S$ crossed. Going once around, the walk in $U$ returns $\sigma_\lambda^{|T\setminus S|}$, since $S$ is flat, and also $\sigma_\lambda^{|T\cap S|}$ times the return of the walk in $S'$; as $|T|$ is even, the walk in $S'$ returns the identity, so $S'$ is flat. The images of the rays of $T$ under $\varphi'$ are those under the maps of $U$ up to a power of $\sigma_\lambda$, so they lie on $\lambda$.
+
+If $x\in T$ is made by the step, then $x\in S'$, and for every $y\in T$ the computation in the proof of Theorem~\ref{thm:wedge}, done in $S'$, gives $y\equiv\sigma_{w_r}\cdots\sigma_{w_1}(x)\pmod\pi$ with $w_1,\dots,w_r$ the rays of $S'$ strictly between $x$ and $y$. By~\eqref{eq:closed}, $y-x$ is then a sum of differences of rays of $S'$, an integer multiple of $\pi$, and twice such sums, so $y-x\in G(S')$. Every ray of $S$ is in $S'$ or in $T$, so $G(S)\subseteq G(S')$. If the step also erases a ray, the same argument with $S$ in place of $S'$ gives $G(S')\subseteq G(S)$.
+\end{proof}
+
+\begin{proposition}\label{prop:six}
+Let $A$ be the rays of a flat vertex of degree $4$ such that $G(A)$ is not generated by $\pi$ and one other element. Then every local history with cancellations of $A$ passes through a state with at least six rays.
+\end{proposition}
+
+\begin{proof}
+A flat state of four rays that contains a line $\{x,x+\pi\}$ has its other two rays at $y$ and $2x-y$, one in each open half-plane, by Kawasaki's condition; so its group is generated by $\pi$ and $y-x$, hence no state with group $G(A)$ contains a line. A step between two states of four rays makes as many rays as it erases, so at least one of each, and preserves the group by Lemma~\ref{lem:group}. Let $S$ be the last state of the history with other than four rays. Every later state has four rays and group $G(A)$, so it contains no line. $S$ is not empty, since every step from the empty state makes a line (Corollary~\ref{cor:wedge}(3)) and so leads to a state of two rays. Suppose $S=\{x,x+\pi\}$. Its folding maps are the identity and $\sigma_x$. For a fold line $\lambda\not\equiv x$, each of the two open half-planes contains exactly one preimage ray of $\lambda$ and neither $x$ nor $x+\pi$ maps onto $\lambda$, so a step with this line makes two rays and keeps $x$ and $x+\pi$. For $\lambda\equiv x$, no ray in an open half-plane maps onto $\lambda$, so the step can only erase $x$ and $x+\pi$. Either way the next state is not a state of four rays without a line. A flat state has an even number of rays, so $S$ has at least six.
+\end{proof}
+
+The crossover of Figure~\ref{fig:crossover} satisfies the hypothesis. Its directions are $0$, $\pi/4$, $\theta$ and $\pi/4+\theta$ modulo $\pi$, with $\tan\theta=11/9$ by the coordinates of the file, so $G(A)$ contains $\pi/4$ and $\theta$. If it were generated by $\pi$ and some $g$, then $\pi/4\in\Z g+\Z\pi$ would force $g\in\mathbb{Q}\pi$, and then $\theta\in\mathbb{Q}\pi$. But $\cos2\theta=-20/101$ is rational and not in $\{0,\pm\frac12,\pm1\}$, so by Niven's theorem $2\theta\notin\mathbb{Q}\pi$. So every local history of a crossover vertex, if one exists, has a state with at least six rays, that is with at least two hidden rays present at once.
 
 \section{Computation}\label{sec:compute}
 
@@ -779,13 +800,35 @@ If the answer is yes, collapses are never necessary, only cheaper. The question 
 
 Crease directions are read from coordinates. We group the lines of all creases (directions modulo $\pi$) within a tolerance and replace each group by its mean. If all groups are multiples of $2\pi/N$ from the first, for some $N\le64$, the directions are snapped to that grid. Otherwise they are kept as real numbers. All tests use real arithmetic with a fixed equality tolerance. The tolerance starts at $10^{-6}$ radians and is raised, through $10^{-4}$, $5\cdot10^{-4}$ and $2\cdot10^{-3}$, until every interior vertex is flat. The running pattern needs $2\cdot10^{-3}$: its coordinates are given to three decimals, and its directions deviate from multiples of $\pi/32$ by up to $0.061^\circ$.
 
-\subsection{Local histories}
+\subsection{Local histories}\label{sec:local-search}
 
 For each interior vertex we enumerate local histories by depth-first search over steps. At a state $S$, the candidate fold lines are the images of the remaining visible rays, the images of the hidden rays awaiting erasure, and, for steps that create only hidden rays, the images of the bisectors of pairs of visible rays. For each candidate line, the preimage rays in the sectors of $S$ are computed. A preimage ray that carries a remaining visible crease may be used as that crease, one that does not may become a new hidden ray, and a hidden ray already on the line may be erased. Every even subset that passes (C) is a step. Hidden rays therefore arise exactly where a fold line has a preimage that carries no visible crease, and their directions are never guessed.
 
-Vertices are tried with $0,1,\dots,4$ hidden rays, and then with one collapse step. A vertex with more than $2000$ histories is not enumerated. Instead, Theorem~\ref{thm:wedge} is encoded directly as constraints on the times of its creases: an even number at each time, and~\eqref{eq:wedge} for every pair made at the same time, with the alternating sum~\eqref{eq:closed} built from comparisons between times. When the directions lie in $\Z/N$ with $N$ a power of two, this arithmetic is done in fixed-width bit-vectors. Condition (C) is checked lazily: when a candidate solution violates it at such a vertex, a clause excluding that step from that earlier set is added and the solver is called again.
+The options of a vertex are grouped into \emph{levels} $(c,k)$, with $c\le1$ collapse steps and $k\le4$ hidden rays, ordered lexicographically; the \emph{first level} of a vertex is the first one at which it has an option. A vertex with more than $2000$ histories is not enumerated. Instead, Theorem~\ref{thm:wedge} is encoded directly as constraints on the times of its creases: an even number at each time, and~\eqref{eq:wedge} for every pair made at the same time, with the alternating sum~\eqref{eq:closed} built from comparisons between times. When the directions lie in $\Z/N$ with $N$ a power of two, this arithmetic is done in fixed-width bit-vectors. Condition (C) is checked lazily: when a candidate solution violates it at such a vertex, a clause excluding that step from that earlier set is added and the solver is called again.
 
-\subsection{The global problem}
+\subsection{Exact local search}\label{sec:exact}
+
+The candidate fold lines of Section~\ref{sec:local-search} restrict only the steps that create hidden rays and no visible ones. Every other step contains a visible ray, or a hidden ray awaiting erasure, whose image fixes the fold line. For a single vertex the restriction can be removed.
+
+\begin{proposition}\label{prop:linear}
+Fix the visible rays at $v$, a number $k$, a cyclic order of the visible rays together with $k$ hidden rays, and a sequence of steps, each given by the rays it makes and the hidden rays it erases. Measure each hidden direction $x_i$ in the interval between its neighbours in the cyclic order. Then the set of $x=(x_1,\dots,x_k)$ for which the sequence is a local history with cancellations is a finite union of sets, each defined by finitely many linear equations and strict or weak linear inequalities in $x$.
+\end{proposition}
+
+\begin{proof}
+The cyclic order and the sequence fix, at every step, the current state and, for every pair of rays, the rays of the state strictly inside the wedge between them. By Theorem~\ref{thm:wedge} and~\eqref{eq:closed}, condition (L) for a step is a set of congruences $\ell(x)\equiv0\pmod\pi$, where each $\ell$ is affine in $x$ with integer coefficients. Since $x$ ranges over a bounded set, so does $\ell$, and each congruence is a finite union of hyperplanes $\ell(x)=j\pi$. Flatness of each state is Kawasaki's condition, one more congruence of the same form. The folding maps of a state are $y\mapsto\pm y+o$ with $o$ affine in $x$ with integer coefficients, so the preimage of a ray of the fold line under the map of a piece $(s,s')$ is an affine function $u(x)$. The piece contains it exactly when $0<u(x)-s+2\pi q<s'-s$, where $q$ is the integer with $0\le u(x)-s+2\pi q<2\pi$; on each of the finitely many regions where $q$ is constant, these are linear inequalities. Condition (C) is a Boolean combination of such conditions, and so is the conjunction of all the conditions.
+\end{proof}
+
+\begin{corollary}\label{cor:decide}
+For each $k$ it is decidable, by finitely many linear feasibility problems, whether a vertex with given visible directions has a local history with cancellations that uses $k$ hidden rays in pairwise distinct directions different from the visible ones.
+\end{corollary}
+
+\begin{proof}
+There are finitely many cyclic orders, and finitely many step sequences, since a sequence has at most $n+2k$ events for $n$ visible rays. Apply Proposition~\ref{prop:linear} to each.
+\end{proof}
+
+We implement Corollary~\ref{cor:decide} as a depth-first search over steps for each placement of the hidden rays among the visible ones. An incremental Z3 problem over the real hidden directions and integer multiples of $\pi$ discards every prefix whose conditions are infeasible. The visible directions are floating-point numbers, so the congruences are required to hold to within $10^{-9}$, hidden rays are kept at least $10^{-6}$ from every other ray, and a preimage within $10^{-6}$ of the boundary of a piece does not count as inside it. Every history found is re-checked in floating point by the functions of Section~\ref{sec:local-search}.
+
+\subsection{The global problem}\label{sec:global-search}
 
 Each crease, visible or hidden, gets an integer time. Each vertex chooses one of its options, given by a set of hidden directions together with its histories. A chosen option requires one of its histories: equal times within a step and increasing times between steps. Each hidden ray at $v$ requires a traced cancelled segment, following Lemma~\ref{lem:crossing}:
 \begin{itemize}
@@ -794,11 +837,11 @@ Each crease, visible or hidden, gets an integer time. Each vertex chooses one of
 \end{itemize}
 The constraints are solved with Z3~\cite{z3}.
 
-The search is started with every vertex at its cheapest option. If the constraints are unsatisfiable, the solver returns a set of vertices whose constraints conflict, and only those vertices are given their next more expensive options. This repeats until a resolution exists, after which the cost is minimised.
+The search is started with the options of every vertex at its first level. If the constraints are unsatisfiable, the solver returns a set of vertices whose constraints conflict, and each of them is given the options of its next level as well. This repeats until a resolution exists, after which the cost is minimised over the options given so far. If $(c_v,k_v)$ is the first level of $v$, every resolution in the search space (Section~\ref{sec:space}) has cost at least $(\sum_v c_v,\sum_v k_v)$, since a vertex at level $(c,k)$ has $c$ collapse steps, each of cost at least $1$, and $k$ hidden rays. When the cost found equals this \emph{lower bound}, it is minimal over the whole search space.
 
 \subsection{Folds and the forced order}\label{sec:analysis}
 
-With the geometry fixed, two creases at a vertex that share a time in a solution are forced together exactly when the solver finds no solution with different times. The folds are the components of this relation. For the forced order, every candidate pair $K,K'$ with $K$ earlier in a solution is tested for a solution with $K'$ not later. Each counter-solution found discards every candidate pair it violates, so far fewer tests are needed than there are pairs.
+The geometry is fixed by fixing the option chosen at every vertex and, for every cancelled segment, its path: the creases where it bends, the creases and vertices it passes, and where it ends. With the geometry fixed, two creases at a vertex that share a time in a solution are forced together exactly when the solver finds no solution with different times. The folds are the components of this relation. For the forced order, every candidate pair $K,K'$ with $K$ earlier in a solution is tested for a solution with $K'$ not later. Each counter-solution found discards every candidate pair it violates, so far fewer tests are needed than there are pairs.
 
 \subsection{The search space}\label{sec:space}
 
@@ -806,7 +849,8 @@ A resolution found by the computation satisfies Definition~\ref{def:resolution}.
 \begin{enumerate}
 \item Cancelled segments start at vertices of $\mathcal P$ and bend at most twice.
 \item Where a cancelled segment passes through a vertex $w$ of $\mathcal P$, every crease at $w$ that is not perpendicular to it must be later than both of its creases. This is sufficient for a history at $w$, but not necessary.
-\item The candidate fold lines for steps creating only hidden rays are bisector images, at most four hidden rays are used at a vertex, and at most one collapse step.
+\item Steps that create only hidden rays use the images of the bisectors of pairs of visible rays as fold lines. A vertex has at most four hidden rays, in pairwise distinct directions, and at most one collapse step.
+\item The cost is minimised over the options given during the search. It is minimal over the search space when it equals the lower bound of Section~\ref{sec:global-search}.
 \item Condition (C) is a necessary condition for physical foldability. The order of layers in the stack is not computed.
 \end{enumerate}
 
