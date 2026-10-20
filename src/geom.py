@@ -31,7 +31,13 @@ class Need(Exception):
     def __init__(self, form, signs): self.form, self.signs = form, signs
 
 
-DEN = 4                          # Lin numerators are integers over DEN (midpoints halve once at most)
+DEN = 4                          # Lin numerators are integers over DEN (midpoints halve once at most);
+                                 # 4 times the denominators of scaffold lines for tables with them
+
+
+def set_den(d):
+    global DEN
+    DEN = d
 
 
 class Lin:
@@ -52,6 +58,9 @@ class Lin:
     def half(self):
         assert all(a % 2 == 0 for a in self.c) and self.k % 2 == 0, 'denominator DEN too small'
         return Lin(tuple(a // 2 for a in self.c), self.k // 2)
+    def div(self, q):
+        assert all(a % q == 0 for a in self.c) and self.k % q == 0, 'denominator DEN too small'
+        return Lin(tuple(a // q for a in self.c), self.k // q)
     def is_const(self): return not any(self.c)
     def num_at(self, P, L):
         """The numerator of the value at the point b_i = P_i / L, over DEN * L."""

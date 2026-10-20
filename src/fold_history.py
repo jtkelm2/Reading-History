@@ -7,6 +7,8 @@ searching for them at each vertex; vertices not covered by the tables get no opt
 --rigid[=reverse|halfturn] (with --table) keeps only local histories realizable with rigid half-turns
 and reverse folds (default), or with half-turns only (src/rigid.py); --cells=DIR takes realizability
 from the exact cells in DIR (src/cells.py) instead of deciding it by search.
+--dl runs the global search with z3's dense difference-logic arithmetic (smt.arith.solver=3): its
+constraints are difference constraints on integer times; the analysis keeps the default arithmetic.
 The analysis fixes the minimal geometry whose cancelled segments are shortest (default), or the one
 the solver found.
 
@@ -386,7 +388,23 @@ MAXC = 1
 def levels(kmax=MAXK):
     return [(c, k) for c in range(MAXC + 1) for k in range(kmax + 1)]
 
+DL = False                        # --dl: the search uses z3's dense difference-logic arithmetic
+
+
 def solve(P, log=print, budget=600):
+    """See _solve.  With DL, the search runs with smt.arith.solver=3; the returned model's solver is
+    then replaced by one with the default arithmetic (the analysis adds cost equalities)."""
+    if not DL: return _solve(P, log, budget)
+    saved = z3.get_param('smt.arith.solver')
+    z3.set_param('smt.arith.solver', 3)
+    try: res = _solve(P, log, budget)
+    finally: z3.set_param('smt.arith.solver', saved)
+    if res['status'] == 'ok':
+        M = res['model']; s = z3.Solver(); s.add(M.s.assertions()); M.s = s
+    return res
+
+
+def _solve(P, log=print, budget=600):
     """Core-guided expansion over the levels (c, k) = (collapse steps, hidden rays), c <= MAXC and
     k <= MAXK, in lexicographic order.  Each vertex starts at its first level with an option; a
     vertex in an unsat core is given the options of its next level.  The cost is then minimised over
@@ -786,6 +804,9 @@ def main(argv):
         elif a.startswith('--budget='): budget = float(a[9:])
         elif a.startswith('--tol='): tols = (float(a[6:]),)
         elif a == '--triage': analyse_it = False
+        elif a == '--dl':
+            global DL
+            DL = True
         else: args.append(a)
     path = args[0]; t0 = time.monotonic()
     summary = {'file': path.split('/')[-1]}

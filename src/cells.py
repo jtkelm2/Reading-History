@@ -18,9 +18,42 @@ Usage:
   python3 src/cells.py merge OUT.json PART1.json PART2.json ...   (parts of one table, in order)
 Witnesses (one vertex per leaf, for tools/verify_cells.py) go to PATH, or into OUT.
 """
-import json, math, sys, time
+import itertools, json, math, sys, time
 from fractions import Fraction as Fr
 import geom, rigid
+
+
+def scaffold_den(types):
+    """4 times the lcm, over the scaffold types, of the products of their pivots: the scaffold lines
+    are affine in b with denominators dividing these products (src/lookup.py, eliminate)."""
+    L = 1
+    for t in types:
+        if 'scaffold' in t:
+            prod = 1
+            for j, c, d in t['scaffold']['pivots']: prod *= abs(d[j])
+            L = L * prod // math.gcd(L, prod)
+    return 4 * L
+
+
+def branch_keys(t):
+    """The branches of a scaffold type: one integer u_j in [0, |pivot j|) per scaffold line."""
+    sizes = [None] * len(t['scaffold']['steps'])
+    for j, c, d in t['scaffold']['pivots']: sizes[j] = abs(d[j])
+    return list(itertools.product(*[range(x) for x in sizes]))
+
+
+def lines(ar, t, a, u):
+    """The scaffold lines of branch u at the vertex a, in ar's number type, by back substitution
+    through the pivot rows (lookup.branches): {step: direction mod pi of the step's first ray}."""
+    sc = t['scaffold']; steps, piv = sc['steps'], sc['pivots']; lam = [None] * len(steps)
+    for j, c, d in reversed(piv):
+        x = u[j] * ar.PI
+        for q, cq in enumerate(c):
+            if cq: x = x - cq * a[q + 1]
+        for q in range(len(steps)):
+            if q != j and d[q]: x = x - d[q] * lam[q]
+        lam[j] = geom.modpi(ar, x.div(d[j]) if isinstance(x, geom.Lin) else x / d[j])
+    return {st: lam[j] for j, st in enumerate(steps)}
 
 
 def _norm(P, L):
@@ -190,20 +223,28 @@ def _collinear(V):
     return True
 
 
-def replay(ar, t, a):
+def replay(ar, t, a, lams=None):
     """lookup.replay in any arithmetic, without (C): the hidden directions, or None."""
     rays, N = t['rays'], len(t['rays'])
     d = [a[r[1]] if r[0] == 'v' else None for r in rays]
     status = [0] * N
-    for T in t['steps']:
+    for i, T in enumerate(t['steps']):
         S = [j for j in range(N) if status[j] == 1]
         Sd = geom.sort(ar, [d[j] for j in S])
         phis = geom.maps(ar, Sd)
         if phis is None: return None
-        anchor = next(j for j in T if rays[j][0] == 'v' or status[j] == 1)
+        anchor = next((j for j in T if rays[j][0] == 'v' or status[j] == 1), None)
+        if anchor is None:                                   # a scaffold step: its first ray from its line
+            anchor = T[0]; x = lams[i]
+            if S:
+                p = max((q for q in S if q < anchor), default=max(S)); q = min((q for q in S if q > anchor), default=min(S))
+                c = [y for y in (x, x + ar.PI) if geom.between(ar, y, d[p], d[q])]
+                if len(c) != 1: return None
+                x = c[0]
+            d[anchor] = x
         lam = geom.apply(ar, phis[geom.sector_of(ar, d[anchor], Sd)], d[anchor]) if S else d[anchor]
         for j in T:
-            if status[j] == 0 and rays[j][0] == 'h':
+            if j != anchor and status[j] == 0 and rays[j][0] == 'h':
                 if not S: d[j] = geom.nrm(ar, lam + ar.PI); continue
                 p = max((i for i in S if i < j), default=max(S)); q = min((i for i in S if i > j), default=min(S))
                 f = phis[geom.sector_of(ar, d[p], Sd)]
@@ -221,15 +262,16 @@ def replay(ar, t, a):
     return d
 
 
-def decide(ar, t, a, tid=None):
+def decide(ar, t, a, tid=None, u=None):
     """At the vertex a (directions in ar's number type): 2 if t is valid and rigidly realizable,
-    1 if valid and realizable with reverse folds only, 0 otherwise. All arithmetic happens in the
-    replay and the skeletons; the search over choices is combinatorial."""
+    1 if valid and realizable with reverse folds only, 0 otherwise; for a scaffold type, with the
+    scaffold lines of branch u. All arithmetic happens in the replay and the skeletons; the search
+    over choices is combinatorial."""
     O = getattr(ar, 'oracle', None)
-    key = ('replay', tid)
+    key = ('replay', tid, u)
     if O is not None and O.recall(key) is not None: d = O.recall(key)
     else:
-        d = replay(ar, t, a)
+        d = replay(ar, t, a, lines(ar, t, a, u) if u is not None else None)
         if O is not None: O.store(key, d if d is not None else False)
     if d is None or d is False: return 0
     sks = rigid.skeletons([[d[j] for j in T] for T in t['steps']], ar)
@@ -243,14 +285,15 @@ def build_tree(t, deadline):
     basis, ps = pieces(t)
     stats = {'leaves': 0, 'nodes': 0, 'checks': 0, 'pieces': len(ps)}; witnesses = []
     tree = {'basis': basis, 'pieces': {}}
-    for vals, V in ps:
+    for (vals, V), u in itertools.product(ps, branch_keys(t) if 'scaffold' in t else [None]):
         O = PolyOracle(m, V); ar = geom.Sym(m, O)
         a = [ar.ZERO] + [ar.var(i) for i in range(m)]
         def explore():
             if time.monotonic() > deadline: raise TimeoutError
             try:
-                r = decide(ar, t, a, 0); stats['leaves'] += 1
-                P, L = O.point(); witnesses.append([[p / L for p in P], r])     # one vertex in the cell
+                r = decide(ar, t, a, 0, u); stats['leaves'] += 1
+                P, L = O.point()                                         # one vertex in the cell
+                witnesses.append([[p / L for p in P], r] + ([list(u)] if u is not None else []))
                 return r
             except geom.Need as e:
                 stats['nodes'] += 1; ch = {}
@@ -260,24 +303,29 @@ def build_tree(t, deadline):
                 if all(isinstance(v, int) for v in vals_) and len(set(vals_)) == 1:
                     return vals_[0]                                  # all branches agree: no split needed
                 return {'f': [str(c) for c in e.form.c], 'k': str(e.form.k), 'c': {str(s_): v for s_, v in ch.items()}}
-        tree['pieces'][','.join(map(str, vals))] = explore()
+        tree['pieces'][piece_key(vals, u)] = explore()
         stats['checks'] += O.checks
     return tree, stats, witnesses
 
 
-def evaluate(tree, a, tol=1e-7):
-    """The value of tree at the vertex with directions a (radians, a[0] = 0): its piece is given by
-    the values of the basis congruences; 0 if it lies in no piece."""
+def piece_key(vals, u=None):
+    return ','.join(map(str, vals)) + ('' if u is None else '|' + ','.join(map(str, u)))
+
+
+def evaluate(tree, a, tol=1e-7, den=4, u=None):
+    """The value of tree at the vertex with directions a (radians, a[0] = 0), for a scaffold type
+    with the scaffold lines of branch u: its piece is given by the values of the basis congruences;
+    0 if it lies in no piece. den: the denominator of the forms (the cells file's meta)."""
     b = [x / math.pi for x in a[1:]]
     vals = []
     for r in tree['basis']:
         v = sum(c * x for c, x in zip(r, b))
         if abs(v - round(v)) > 1e-6: return 0
         vals.append(int(round(v)))
-    node = tree['pieces'].get(','.join(map(str, vals)))
+    node = tree['pieces'].get(piece_key(vals, u))
     if node is None: return 0
     while isinstance(node, dict):
-        v = (sum(int(c) * x for c, x in zip(node['f'], b)) + int(node['k'])) / geom.DEN
+        v = (sum(int(c) * x for c, x in zip(node['f'], b)) + int(node['k'])) / den
         sg = 0 if abs(v) < tol else (1 if v > 0 else -1)
         node = node['c'].get(str(sg))
         if node is None: return None                                # outside the explored region
@@ -301,6 +349,7 @@ def main(argv):
         d = json.load(open(src)); t0 = time.monotonic(); deadline = t0 + secs
         first = int(next((x[8:] for x in argv if x.startswith('--first=')), 0))
         start = int(next((x[8:] for x in argv if x.startswith('--start=')), 0))
+        geom.set_den(scaffold_den(d['types']))         # over the whole table, so that parts agree
         if first: d['types'] = d['types'][:first]
         if start: d['types'] = d['types'][start:]
         trees, rows, wits, complete = [], [], [], True
@@ -312,7 +361,8 @@ def main(argv):
         meta = {'n': d['meta']['n'], 'k': d['meta']['k'], 'types': len(d['types']), 'trees': len(trees),
                 'complete': complete and len(trees) == len(d['types']), 'seconds': round(time.monotonic() - t0, 1),
                 'leaves': sum(r['leaves'] for r in rows), 'tree_nodes': sum(r['nodes'] for r in rows),
-                'sign_queries': sum(r['checks'] for r in rows), 'max_type_seconds': max((r['seconds'] for r in rows), default=0)}
+                'sign_queries': sum(r['checks'] for r in rows), 'max_type_seconds': max((r['seconds'] for r in rows), default=0),
+                'den': geom.DEN}
         wpath = next((x[12:] for x in argv if x.startswith('--witnesses=')), None)
         json.dump({'meta': meta, 'trees': trees, 'stats': rows} if wpath else {'meta': meta, 'trees': trees, 'stats': rows, 'witnesses': wits}, open(out, 'w'))
         if wpath: json.dump({'witnesses': wits}, open(wpath, 'w'))
