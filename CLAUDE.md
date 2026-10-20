@@ -53,8 +53,12 @@ cases.
   with k hidden rays in arbitrary directions: fixed cyclic order + step sequence makes (L),
   flatness and (C) linear (z3 over reals and integers), DFS over steps with pruning.
 - **Lookup tables (src/lookup.py, branch lookup-tables).** `build n k DIR` enumerates history types
-  (symbolic visible directions, no hidden-only steps) into `DIR/deg{n}_k{k}.json`; `Table` and
-  `options_for` replace `Pattern.options` at runtime (`--table=DIR`). See docs/lookup_tables.md.
+  (symbolic visible directions, no hidden-only steps) into `DIR/deg{n}_k{k}.json`; `build n k DIR
+  --scaffold` (branch scaffold-lines) the types with a scaffold step, i.e. a hidden-only step whose
+  line later steps pin (`eliminate`), into `DIR/deg{n}_k{k}_s.json`. `Table` and `options_for`
+  replace `Pattern.options` at runtime (`--table=DIR`); `--rigid --cells=DIR` filters by the exact
+  cells of src/cells.py; `--dl` runs the global search with z3's difference-logic arithmetic.
+  See docs/lookup_tables.md.
 - **Tools.** `tools/common.py`: `resolve(path, geometry='found'|'shortest')`, `geometries`
   (all minimal geometries, paths included).
 

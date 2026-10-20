@@ -284,7 +284,7 @@ class Table:
         """rigid: False, or 'halfturn' / 'reverse': keep only histories realizable at the vertex with
         rigid half-turns, or with half-turns and reverse folds (src/rigid.py)."""
         self.rigid = rigid
-        self.by_n = {}; self.meta = []
+        self.by_n, self.by_nk = {}, {}; self.meta = []
         self.by_file = {}
         for fn in sorted(os.listdir(outdir)):
             if not fn.endswith('.json'): continue
@@ -293,6 +293,7 @@ class Table:
             for t in d['types']:
                 t['req'] = [tuple(v) for v in t['req']]
                 self.by_n.setdefault(t['n'], []).append(t)
+                self.by_nk.setdefault((t['n'], t['k']), []).append(t)
         self.vectors = {n: sorted({v for t in ts for v in t['req']}) for n, ts in self.by_n.items()}
         self.cache = {}; self.stats = {'lookups': 0, 'cache_hits': 0, 'replays': 0, 'not_rigid': 0, 'tree_lookups': 0, 'searched': 0}
         if cells:                                       # exact realizability cells (src/cells.py), per table file
@@ -313,9 +314,10 @@ class Table:
         self.stats['searched'] += 1
         return rigid_ok(t, a, h, self.rigid == 'reverse')
 
-    def valid(self, a):
-        """Valid (type, hidden directions) at the vertex with visible directions a (a[0] = 0)."""
-        n = len(a); key = tuple(round(x, 9) for x in a)
+    def valid(self, a, k=None):
+        """Valid (type, hidden directions) at the vertex with visible directions a (a[0] = 0), with
+        k hidden rays (all k if None)."""
+        n = len(a); key = (tuple(round(x, 9) for x in a), k)
         self.stats['lookups'] += 1
         if key in self.cache: self.stats['cache_hits'] += 1; return self.cache[key]
         sat = set()
@@ -323,16 +325,16 @@ class Table:
             x = sum(c * a[i + 1] for i, c in enumerate(v))
             if abs((x + PI / 2) % PI - PI / 2) < 1e-6: sat.add(v)
         out = []
-        for t in self.by_n.get(n, []):
+        for t in (self.by_n.get(n, []) if k is None else self.by_nk.get((n, k), [])):
             if all(v in sat for v in t['req']):
                 seen = set()
                 for u, lams in (branches(t, a) if 'scaffold' in t else [(None, None)]):
                     self.stats['replays'] += 1
                     h = replay(t, a, lams)
                     if h is None: continue
-                    key = tuple(round(x, 9) for x in h)
-                    if key in seen: continue
-                    seen.add(key)
+                    hk = tuple(round(x, 9) for x in h)
+                    if hk in seen: continue
+                    seen.add(hk)
                     if self.rigid and not self.realizable(t, a, h, u): self.stats['not_rigid'] += 1; continue
                     out.append((t, h))
         self.cache[key] = out
@@ -352,17 +354,19 @@ def rigid_ok(t, a, h, reverse=False):
 
 def branches(t, a):
     """The scaffold lines of a scaffold type at the vertex a, by back substitution through the
-    pivot rows of its elimination: each line once per solution mod pi. Yields (u, {step: line}),
-    u the branch (u_j in [0, |pivot j|) per line, as in cells.lines)."""
+    pivot rows of its elimination: each line once per solution mod pi. Yields (u, {step: line mod pi}),
+    u the branch (u_j in [0, |pivot j|) per line, as in cells.lines). Later rows substitute the
+    unreduced lines, which are affine in a: reducing them mod pi first would make the labels u jump
+    where a line crosses 0 = pi, and disagree with the exact cells."""
     sc = t['scaffold']; steps, piv = sc['steps'], sc['pivots']
     lam, us = [None] * len(steps), [None] * len(steps)
     def rec(i):
         if i < 0:
-            yield tuple(us), {st: lam[j] for j, st in enumerate(steps)}; return
+            yield tuple(us), {st: lam[j] % PI for j, st in enumerate(steps)}; return
         j, c, d = piv[i]
         rhs = -(sum(ci * a[q + 1] for q, ci in enumerate(c)) + sum(d[q] * lam[q] for q in range(len(steps)) if q != j and d[q]))
         for u in range(abs(d[j])):
-            lam[j] = ((rhs + PI * u) / d[j]) % PI; us[j] = u
+            lam[j] = (rhs + PI * u) / d[j]; us[j] = u
             yield from rec(i - 1)
         lam[j] = us[j] = None
     yield from rec(len(piv) - 1)
@@ -413,16 +417,16 @@ def options_for(table, P):
     memo = {}
     def options(p, k, c=0):
         if c: return []
-        if p not in memo:
+        if (p, k) not in memo:                         # per depth, on demand
             items = P.H[p]; n = len(items); D = [x for x, _ in items]; E = [e for _, e in items]
-            byk = {}
+            byR = {}
             for r in range(n):
                 a = [fh.nrm(D[(i + r) % n] - D[r]) for i in range(n)]
-                for t, hdirs in table.valid(a):
+                for t, hdirs in table.valid(a, k):
                     H = [fh.nrm(h + D[r]) for h in hdirs]
                     R = tuple(sorted(H, key=lambda x: round(x, 9)))
                     rk = tuple(round(x, 9) for x in R)
-                    o = byk.setdefault(t['k'], {}).setdefault(rk, [R, set()])
+                    o = byR.setdefault(rk, [R, set()])
                     canon = {round(x, 9): x for x in o[0]}      # one float per hidden direction per option
                     made = set(); steps = []
                     for T in t['steps']:
@@ -433,8 +437,8 @@ def options_for(table, P):
                             else: st.append(((p, canon[round(H[ray[1]], 9)]), 2 if j in made else 1))
                         made |= set(T); steps.append(frozenset(st))
                     o[1].add(tuple(steps))
-            memo[p] = {kk: [(R, sorted(hs, key=str), 0) for R, hs in d.values()] for kk, d in byk.items()}
-        return memo[p].get(k, [])
+            memo[p, k] = [(R, sorted(hs, key=str), 0) for R, hs in byR.values()]
+        return memo[p, k]
     return options
 
 

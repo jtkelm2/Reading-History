@@ -50,10 +50,10 @@ def _replay(P, p, h, delta):
         for kk, x in T:
             v = img(cur(kk, x)) - lam
             res.append((v + math.pi / 2) % math.pi - math.pi / 2)
-        for kk, x in T:
-            if not isinstance(kk, tuple): S.append((kk, x))
-            elif kk[1] == 1: S.append((kk[0][1], d[kk[0][1]]))
-            else: S = [(a, y) for a, y in S if a != kk[0][1]]
+        for kk, x in T:                     # rays tagged: a crease id 0 must not equal a direction 0.0
+            if not isinstance(kk, tuple): S.append((('v', kk), x))
+            elif kk[1] == 1: S.append((('h', kk[0][1]), d[kk[0][1]]))
+            else: S = [(a, y) for a, y in S if a != ('h', kk[0][1])]
     return res
 
 

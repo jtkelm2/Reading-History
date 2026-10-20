@@ -44,7 +44,8 @@ def branch_keys(t):
 
 def lines(ar, t, a, u):
     """The scaffold lines of branch u at the vertex a, in ar's number type, by back substitution
-    through the pivot rows (lookup.branches): {step: direction mod pi of the step's first ray}."""
+    through the pivot rows (lookup.branches): {step: direction mod pi of the step's first ray}.
+    Later rows substitute the unreduced lines (affine in a), so that branch labels are continuous."""
     sc = t['scaffold']; steps, piv = sc['steps'], sc['pivots']; lam = [None] * len(steps)
     for j, c, d in reversed(piv):
         x = u[j] * ar.PI
@@ -52,8 +53,8 @@ def lines(ar, t, a, u):
             if cq: x = x - cq * a[q + 1]
         for q in range(len(steps)):
             if q != j and d[q]: x = x - d[q] * lam[q]
-        lam[j] = geom.modpi(ar, x.div(d[j]) if isinstance(x, geom.Lin) else x / d[j])
-    return {st: lam[j] for j, st in enumerate(steps)}
+        lam[j] = x.div(d[j]) if isinstance(x, geom.Lin) else x / d[j]
+    return {st: geom.modpi(ar, lam[j]) for j, st in enumerate(steps)}
 
 
 def _norm(P, L):

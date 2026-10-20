@@ -285,3 +285,64 @@ an erased hidden ray (so that every hidden direction is fixed when it is made). 
 free: moving it by ±0.001 rad, with every later hidden ray recomputed from its anchor, breaks (L)
 at step 3, where one of its rays is erased together with a visible crease. Its direction is fixed,
 but by a later step.
+
+## Scaffold lines in the tables
+
+A *scaffold step* makes only hidden rays. `lookup.py build n k DIR --scaffold` enumerates the
+types with at least one scaffold step into `DIR/deg{n}_k{k}_s.json`; the anchored types stay in
+`deg{n}_k{k}.json`, unchanged (rebuilding them with the new code reproduces the committed files).
+
+**Enumeration.** As for anchored types, with two changes:
+- A scaffold step is allowed. The direction (mod π) of its first ray becomes a new variable λ_j, and
+  its other rays are filled in from it by Theorem 11.
+- Visible ray 0 is in the first step that contains a visible ray (the rotation normalisation; the
+  first step may now contain none).
+
+Every condition (L) and every flatness condition is then a congruence c·a + d·λ ≡ 0 (mod π) with
+integer c, d.
+
+**Elimination (`eliminate`).** Unimodular integer row operations leave equivalent congruences.
+For each line j in turn, Euclid's algorithm on column j leaves at most one row with a nonzero entry
+there; that pivot row is set aside. Pivot row j has no entries in the columns before j. If some
+column has no pivot, the lines are not pinned. That line can move continuously, with the earlier
+lines following it through their pivot rows, without violating any congruence, and the strict
+inequalities leave a continuum of valid lines. Such types are counted (`unpinned`) and dropped, so there are still no free hidden
+directions. Otherwise the pivot rows are triangular in the lines, and each reads
+d_jj λ_j ≡ r_j(a, λ_{j+1}, …) (mod π), which has exactly |d_jj| solutions mod π for every
+right-hand side. Hence the vertices for which some lines satisfy all the congruences are exactly
+those satisfying the rows left without lines. These rows are the type's index congruences, as for
+anchored types. A *branch* is a choice of u_j ∈ [0, |d_jj|) for each line:
+λ_j = (r_j + u_j π)/d_jj, where r_j substitutes the later lines unreduced. These are affine in a,
+so a branch is a continuous choice of lines; reducing a line mod π before substituting it would
+make the labels jump where the line crosses 0 ≡ π. Rays use λ_j mod π.
+
+**Runtime.** For a scaffold type whose index congruences hold, every branch is replayed; the replay
+places a scaffold step's first ray at λ_j or λ_j + π, whichever lies between its neighbours.
+
+**Exact cells.** Per (piece, branch), as for anchored types. The lines are affine in b with
+denominators dividing the product of the pivots, so the forms of a scaffold table have numerators
+over 4 · lcm(products of pivots), stored as `den` in the cells meta (8 to 240 here).
+
+| Degree | k | Types | Unpinned (dropped) | Build | Cells: leaves | Cells: build | den |
+|---|---|---|---|---|---|---|---|
+| 2 | 1 / 2 | 0 / 1 | 0 / 2 | < 1 s | 0 / 2 | < 1 s | 4 / 8 |
+| 4 | 1 / 2 / 3 / 4 | 0 / 12 / 156 / 2754 | 0 / 12 / 66 / 1619 | 0.0 / 1.3 / 41.9 / 1582.0 s | 0 / 90 / 1860 / 60984 | 0.0 / 0.4 / 8.7 / 294.9 s | 4 / 8 / 24 / 240 |
+| 6 | 1 / 2 | 0 / 282 | 0 / 152 | 0.0 / 62.0 s | 0 / 12164 | 0.0 / 125.4 s | 4 / 8 |
+
+Degree 6 with k = 3 is not built. The anchored degree-6, k = 3 table took 4528 s and its cells
+9250 s; the scaffold version is expected to cost several times more.
+
+**Checks.**
+- `tools/verify_cells.py` on every scaffold cells file: every leaf witness, and every (corpus vertex
+  rotation, type, branch), agree with the numeric computation. Largest: degree 4, k = 4, with 60984
+  witnesses and 1537088 corpus checks; 0 disagree.
+- `tools/validate_scaffold.py tables` over the corpus (63 vertex shapes, 257 shape × depth
+  comparisons) compares with the solver's own local search, whose scaffold lines are bisector
+  images.
+  - Every scaffold history of the search whose lines are pinned (`tools/pinning.py`) is in the
+    tables: 2259 of them, against 5400 in the tables.
+  - Every scaffold history of the tables is pinned by the numeric measure, independently of the
+    elimination: 0 exceptions.
+- At the two shapes of Dutch Rabbit, Squirrel, Kirby and kitsune, the tables give 2 histories each
+  realizable with reverse folds; one at each is the 5-step history of the grid search above.
+- `tools/verify_examples.py`, with and without `--table=tables`, reproduces the paper's numbers.
