@@ -257,3 +257,30 @@ decided by search: every realizability came from a tree.
   slightly (0.30 s instead of 0.20 s).
 - With half-turns only, 6 patterns resolve: reverse folds are needed almost everywhere a
   cancellation is.
+
+## The patterns lost to the physical filter
+
+Of the 29 patterns the tables resolve, 6 are lost with `--rigid=reverse`:
+- **Local:** Dutch Rabbit, Squirrel, Kirby and kitsune each have vertices of one of two shapes,
+  (22.5°, 90°, 157.5°, 90°) and (67.5°, 90°, 112.5°, 90°) (sectors α, 90°, 180° − α, 90°), with no
+  realizable history within the tables (degree 4, at most 4 hidden rays, every step anchored).
+- **Global:** Color-change Pinwheel and Marnie keep local options at every vertex but end in an
+  unsatisfiable core (8 and 10 vertices). Not yet diagnosed.
+
+**The first missing feature: scaffold lines.** `tools/grid_search.py` searches breadth-first over
+layered states of one vertex, with every fold line on the 22.5° grid, steps as in flatvertex (any
+even set of preimages of a line; visible creases may also be erased), and all labelings, up sides
+and senses. Both shapes are reached in 5 steps:
+
+| shape (rays in units of 22.5°) | history: rays of each step (made / erased) |
+|---|---|
+| {0, 1, 5, 12} | {2, 10} / –; {5, 15} / – (reverse fold); {12} / {2}; {0} / {10} (reverse fold); {1} / {15} |
+| {0, 3, 7, 12} | {1, 9} / –; {6, 12} / – (reverse fold); {3} / {9}; {7} / {1} (reverse fold); {0} / {6} |
+
+Both are realizable with reverse folds and not rigidly. Each begins with a step that makes only
+hidden rays: a fold along a line through the vertex that carries no final crease and is erased
+later. The tables exclude such steps, because they required every step to contain a visible ray or
+an erased hidden ray (so that every hidden direction is fixed when it is made). The line is not
+free: moving it by ±0.001 rad, with every later hidden ray recomputed from its anchor, breaks (L)
+at step 3, where one of its rays is erased together with a visible crease. Its direction is fixed,
+but by a later step.
