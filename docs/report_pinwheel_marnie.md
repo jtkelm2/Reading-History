@@ -101,3 +101,16 @@ python3 tools/scaffold_witness.py PATTERN --scaffolds --solve        # the solve
 python3 tools/scaffold_witness.py PATTERN --scaffolds --witness --out=W.json
 python3 tools/scaffold_witness.py MARNIE --need=10,12 [--scaffolds]  # the pair
 ```
+
+## Outcome
+
+Recommendations 1–3 are implemented on branch `scaffold-lines`; see `docs/lookup_tables.md`,
+"Scaffold lines in the tables".
+- The difference-logic search is the opt-in flag `--dl`. Without it, kitsune and Marnie time out
+  at 150 s.
+- With `--table=tables --rigid=reverse --cells=cells --dl`, all six lost patterns resolve with
+  histories realizable with reverse folds, and so does 054 Hexagon, which no earlier
+  configuration resolved: 30 of 48 patterns.
+- Color-change Pinwheel resolves with 16 hidden rays. Marnie needed 37 in the recorded run, not
+  certified minimal.
+- Degree-6 scaffold types are built up to k = 2; Marnie needs no more.
