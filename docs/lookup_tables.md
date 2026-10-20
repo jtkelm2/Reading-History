@@ -265,7 +265,8 @@ Of the 29 patterns the tables resolve, 6 are lost with `--rigid=reverse`:
   (22.5°, 90°, 157.5°, 90°) and (67.5°, 90°, 112.5°, 90°) (sectors α, 90°, 180° − α, 90°), with no
   realizable history within the tables (degree 4, at most 4 hidden rays, every step anchored).
 - **Global:** Color-change Pinwheel and Marnie keep local options at every vertex but end in an
-  unsatisfiable core (8 and 10 vertices). Not yet diagnosed.
+  unsatisfiable core (8 and 10 vertices). They need the same feature, pinned scaffold lines:
+  `docs/report_pinwheel_marnie.md`.
 
 **The first missing feature: scaffold lines.** `tools/grid_search.py` searches breadth-first over
 layered states of one vertex, with every fold line on the 22.5° grid, steps as in flatvertex (any
