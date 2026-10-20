@@ -232,3 +232,28 @@ How the cost came down (all measured):
   with results reused within a region (the trees of these three versions are identical); 13.1 s
   with the polygon oracle, whose trees are rooted at the pieces and were checked with
   tools/verify_cells.py instead.
+
+### The corpus with the physical filter from the cells
+
+`results/lookup_first_build/corpus_cells_reverse.jsonl` and `corpus_cells_halfturn.jsonl`
+(`--table=tables --rigid=reverse|halfturn --cells=cells`, 170 s per pattern). No history was
+decided by search: every realizability came from a tree.
+
+| | resolved | total time on the 23 resolved with and without the filter | Pygmy Jerboa (070) |
+|---|---|---|---|
+| tables, no filter | 29 | 107.2 s | 94.5 s |
+| tables, realizable with reverse folds | 23 | 15.2 s | 4.6 s |
+| tables, rigidly realizable (half-turns only) | 6 | | |
+
+- On the 23 patterns resolved both ways, the cost is the same for 19 and higher with the filter
+  for 4 (016: 18 vs 15, 070: 16 vs 13, 292: 7 vs 5, 303: 7 vs 6): the cheapest local histories
+  there were not physically realizable.
+- The filter loses 6 patterns. Dutch Rabbit, Squirrel, Kirby and kitsune have a degree-4 vertex with
+  no realizable history within the tables; Color-change Pinwheel and Marnie keep local options at
+  every vertex, but no consistent global resolution.
+- The time is the global solve: removing non-physical histories shrinks the problem, most for the
+  hard patterns (070: 94.5 s to 4.6 s, 016: 4.9 s to 2.5 s, 302: 3.9 s to 1.6 s). The trees add
+  0.09 s of loading per pattern (0.14 s instead of 0.05 s), which is why the median rises
+  slightly (0.30 s instead of 0.20 s).
+- With half-turns only, 6 patterns resolve: reverse folds are needed almost everywhere a
+  cancellation is.
