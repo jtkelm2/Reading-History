@@ -1,0 +1,1 @@
+{"meta": {"n": 2, "k": 0, "types": 1, "trees": 1, "complete": true, "seconds": 0.0, "leaves": 1, "tree_nodes": 0, "sign_queries": 9, "max_type_seconds": 0.001}, "trees": [{"basis": [], "pieces": {"": 2}}], "stats": [{"leaves": 1, "nodes": 0, "checks": 9, "pieces": 1, "seconds": 0.001}]}

@@ -15,14 +15,14 @@ def resolve_tol(path, tol=None):
     return P
 
 
-def resolve(path, tol=None, geometry='found', table=None, rigid=False):
+def resolve(path, tol=None, geometry='found', table=None, rigid=False, cells=None):
     """Pattern, solve result, and (folds, forced order, times, cancelled paths) for one file.
     geometry='shortest' analyses the minimal geometry whose cancelled segments are shortest.
     table=DIR takes the local histories from the lookup tables in DIR (src/lookup.py)."""
     P = resolve_tol(path, tol)
     if table:
         import lookup
-        P.options = lookup.options_for(lookup.Table(table, rigid), P)
+        P.options = lookup.options_for(lookup.Table(table, rigid, cells), P)
     res = fh.solve(P, log=lambda s: None)
     assert res['status'] == 'ok', res['status']
     if geometry == 'shortest':

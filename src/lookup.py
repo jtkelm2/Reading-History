@@ -224,7 +224,7 @@ def build(n, k, outdir, seconds):
 
 # ---------------------------------------------------------------- runtime
 class Table:
-    def __init__(self, outdir, rigid=False):
+    def __init__(self, outdir, rigid=False, cells=None):
         """rigid: False, or 'halfturn' / 'reverse': keep only histories realizable at the vertex with
         rigid half-turns, or with half-turns and reverse folds (src/rigid.py)."""
         self.rigid = rigid
@@ -236,7 +236,25 @@ class Table:
                 t['req'] = [tuple(v) for v in t['req']]
                 self.by_n.setdefault(t['n'], []).append(t)
         self.vectors = {n: sorted({v for t in ts for v in t['req']}) for n, ts in self.by_n.items()}
-        self.cache = {}; self.stats = {'lookups': 0, 'cache_hits': 0, 'replays': 0, 'not_rigid': 0}
+        self.cache = {}; self.stats = {'lookups': 0, 'cache_hits': 0, 'replays': 0, 'not_rigid': 0, 'tree_lookups': 0, 'searched': 0}
+        if cells:                                       # exact realizability cells (src/cells.py), per table file
+            for fn in sorted(os.listdir(outdir)):
+                cf = os.path.join(cells, fn)
+                if not fn.endswith('.json') or not os.path.exists(cf): continue
+                C = json.load(open(cf)); T = json.load(open(os.path.join(outdir, fn)))['types']
+                if not C['meta'].get('complete') or len(C['trees']) != len(T): continue
+                trees = C['trees']; n = T[0]['n'] if T else None; k = C['meta']['k']
+                ts = [t for t in self.by_n.get(n, []) if t['k'] == k]
+                for t, tr in zip(ts, trees): t['tree'] = tr
+
+    def realizable(self, t, a, h):
+        """Realizability of a valid type at the vertex: from its exact cells when available
+        (2 rigidly, 1 only with reverse folds), else by search (counted in stats['searched'])."""
+        if 'tree' in t:
+            v = _tree_value(t['tree'], a); self.stats['tree_lookups'] += 1
+            if v is not None: return v == 2 or (v == 1 and self.rigid == 'reverse')
+        self.stats['searched'] += 1
+        return rigid_ok(t, a, h, self.rigid == 'reverse')
 
     def valid(self, a):
         """Valid (type, hidden directions) at the vertex with visible directions a (a[0] = 0)."""
@@ -252,10 +270,15 @@ class Table:
             if all(v in sat for v in t['req']):
                 self.stats['replays'] += 1
                 h = replay(t, a)
-                if h is not None and self.rigid and not rigid_ok(t, a, h, self.rigid == 'reverse'): self.stats['not_rigid'] += 1; continue
+                if h is not None and self.rigid and not self.realizable(t, a, h): self.stats['not_rigid'] += 1; continue
                 if h is not None: out.append((t, h))
         self.cache[key] = out
         return out
+
+
+def _tree_value(tree, a):
+    import cells
+    return cells.evaluate(tree, a)
 
 
 def rigid_ok(t, a, h, reverse=False):

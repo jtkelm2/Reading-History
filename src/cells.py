@@ -14,7 +14,8 @@ leaves partition the vertices into polyhedral cells (relatively open, of every d
 Condition (C) is not replayed: realizability implies it (flatvertex, Lemma 3.3(3)).
 
 Usage:
-  python3 src/cells.py build TABLE.json OUT.json [--seconds=S] [--first=N] [--witnesses=PATH]
+  python3 src/cells.py build TABLE.json OUT.json [--seconds=S] [--first=N] [--start=N] [--witnesses=PATH]
+  python3 src/cells.py merge OUT.json PART1.json PART2.json ...   (parts of one table, in order)
 Witnesses (one vertex per leaf, for tools/verify_cells.py) go to PATH, or into OUT.
 """
 import json, math, sys, time
@@ -284,12 +285,24 @@ def evaluate(tree, a, tol=1e-7):
 
 
 def main(argv):
+    if argv[0] == 'merge':                                  # merge OUT1 OUT2 ... into OUT (types in order)
+        out, parts = argv[1], argv[2:]
+        D = [json.load(open(x)) for x in parts]
+        meta = dict(D[0]['meta'])                           # the first part was built from the whole table
+        meta['trees'] = sum(len(x['trees']) for x in D)
+        for k in ('seconds', 'leaves', 'tree_nodes', 'sign_queries'): meta[k] = round(sum(x['meta'][k] for x in D), 1)
+        meta['max_type_seconds'] = max(x['meta']['max_type_seconds'] for x in D)
+        meta['complete'] = meta['trees'] == meta['types'] and D[-1]['meta']['complete']
+        json.dump({'meta': meta, 'trees': [t for x in D for t in x['trees']], 'stats': [r for x in D for r in x['stats']]}, open(out, 'w'))
+        print(json.dumps(meta)); return
     if argv[0] == 'build':
         src, out = argv[1], argv[2]
         secs = float(next((x[10:] for x in argv if x.startswith('--seconds=')), 3600))
         d = json.load(open(src)); t0 = time.monotonic(); deadline = t0 + secs
         first = int(next((x[8:] for x in argv if x.startswith('--first=')), 0))
+        start = int(next((x[8:] for x in argv if x.startswith('--start=')), 0))
         if first: d['types'] = d['types'][:first]
+        if start: d['types'] = d['types'][start:]
         trees, rows, wits, complete = [], [], [], True
         for i, t in enumerate(d['types']):
             t1 = time.monotonic()

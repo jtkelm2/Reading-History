@@ -164,3 +164,71 @@ least number of hidden rays rises. With `--table=tables --rigid=reverse`, the ru
 patterns resolve with the same folds and forced order as without the filter (15 folds, 30 relations,
 19 Hasse edges; 6 folds, 9 relations, 24 linear extensions); the check takes 86 s and 26 s, because
 realizability is decided at runtime by a search over labelings, up sides and senses.
+
+## Exact realizability cells (refining the cells for rigidity)
+
+`src/cells.py`, `cells/deg{n}_k{k}.json` (one decision tree per table type), checked by
+`tools/verify_cells.py`.
+
+**Statement.** For a history type t of degree n, write the vertex as b = (b_1, …, b_{n−1}), its
+directions in units of π (b_0 = 0), with 0 < b_1 < … < b_{n−1} < 2 and Kawasaki's condition
+b_1 − b_2 + … + b_{n−1} = 1. The set of vertices at which t is valid and realizable (rigidly, or
+with reverse folds) is a finite union of relatively open polyhedra, each cut out by sign conditions
+on finitely many affine forms in b with rational coefficients.
+
+**Why.** Replaying t and deciding its realizability (src/rigid.py, through src/geom.py) consults
+the vertex only through signs of affine forms: every normalisation mod 2π is an integer q chosen
+at a point of the current region and certified by the two signs of x − q·2π and x − (q+1)·2π;
+equality, betweenness, sorting and midpoints reduce to such signs. Within a region where every
+consulted sign is fixed, the computation asks the same questions, gets the same answers and
+returns the same outcome (induction over the questions). Splitting a region into the feasible
+signs of an undecided form therefore yields a finite decision tree whose leaves partition the
+vertices into polyhedral cells with constant outcome.
+
+**How it is computed.**
+1. *Pieces.* A type's required congruences c·b ≡ 0 (mod 1), with Kawasaki's condition, cut out an
+   affine subspace for each choice of the integers c·b = m on a basis of them. Each piece is that
+   subspace clipped to the order constraints, kept only if it has the subspace's dimension. The
+   dimension is 1 for every degree-4 type, and 2 for 10,120 of the 10,222 degree-6 types (1 for the other 102).
+2. *Regions* are relatively open convex polygons (or segments, points), stored by the vertices of
+   their closure, in exact integer arithmetic. An affine form f is > 0 on a region iff f ≥ 0 at all
+   vertices and not 0 at all of them; = 0 iff 0 at all vertices; otherwise all three signs occur and
+   the region is split by exact clipping. The witness point used for normalisations is the centroid.
+3. *Symbolic execution.* The replay and the skeletons of src/rigid.py run on exact affine forms;
+   an undecided sign raises a split, and the computation restarts in each part. Results computed
+   in a region (replays, skeletons, normalisations) are reused in all its sub-regions. Only the
+   geometry is symbolic: given the skeletons, the search over labelings, up sides and senses is
+   combinatorial, so each leaf records both models (2: rigidly realizable; 1: only with reverse
+   folds; 0: neither).
+
+**Checks.** For every leaf a witness vertex is stored; at it the numeric computation must give the
+leaf's value and the tree lookup must reach it. At every rotation of every corpus vertex shape, the
+tree lookup must equal the numeric computation for every type. Result for all tables: 723,018 witnesses and
+4,362,610 (vertex rotation, type) pairs, no disagreement.
+
+**Cost** (one core, `nice -n 19`):
+
+| table | types | seconds | leaves (cells) | sign queries |
+|---|---|---|---|---|
+| degree 4, k = 0 … 4 | 653 | 78.5 | 14,373 | 1.17 M |
+| degree 6, k = 0 | 4 | 0.4 | 68 | 7 k |
+| degree 6, k = 1 | 54 | 11.9 | 1,422 | 0.20 M |
+| degree 6, k = 2 | 688 | 341.2 | 32,058 | 6.0 M |
+| degree 6, k = 3 | 9,476 | 9,249.7 | 675,096 | 160.2 M |
+
+In all, 10,875 types in 2.7 hours. The trees are small, 3.1 MB for all tables (2.75 MB for degree 6,
+k = 3), because realizability is constant on most pieces and such trees collapse to one value per
+piece: 6,922 of the 9,476 degree-6, k = 3 types, 392 of 688 at k = 2, 430 of 556 for degree 4,
+k = 4. The slowest type took 8.0 s. The witnesses, kept only for the
+checks, are about 60 times larger.
+
+How the cost came down (all measured):
+- one degree-4, k = 2 type: 145 s with a z3 oracle evaluating the witness through z3; 41 s reading
+  the witness point once per region;
+- all 12 degree-4, k = 2 types: 7.1 s with skeletons (each step's geometry once, the choices
+  combinatorially; numerically the skeletons are 77 times faster than the reference on the
+  corpus histories, with identical results); 0.4 s with the polygon oracle;
+- 20 degree-6, k = 2 types: 275.7 s with three z3 calls per new form; 132.2 s with one; 91.0 s
+  with results reused within a region (the trees of these three versions are identical); 13.1 s
+  with the polygon oracle, whose trees are rooted at the pieces and were checked with
+  tools/verify_cells.py instead.
