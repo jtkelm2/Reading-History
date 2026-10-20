@@ -346,3 +346,41 @@ Degree 6 with k = 3 is not built. The anchored degree-6, k = 3 table took 4528 s
 - At the two shapes of Dutch Rabbit, Squirrel, Kirby and kitsune, the tables give 2 histories each
   realizable with reverse folds; one at each is the 5-step history of the grid search above.
 - `tools/verify_examples.py`, with and without `--table=tables`, reproduces the paper's numbers.
+
+### The corpus with scaffold lines
+
+`results/scaffold_lines/corpus_cells_reverse_dl.jsonl` and `corpus_cells_reverse.jsonl`
+(`--table=tables --rigid=reverse --cells=cells`, with and without `--dl`, 170 s per pattern). Every
+realizability came from a tree; none was decided by search.
+
+| | resolved | timeouts | total time on the 28 resolved both ways |
+|---|---|---|---|
+| tables without the filter (reference) | 29 | 1 | |
+| physical filter, no scaffold lines | 23 | 1 | |
+| physical filter, scaffold lines | 28 | 3 (kitsune, Marnie, 304) | 86.0 s |
+| physical filter, scaffold lines, `--dl` | 30 | 1 (304) | 18.2 s |
+
+With `--dl`, all six patterns lost to the physical filter resolve:
+
+| pattern | hidden rays (lower bound) | time | unfiltered tables |
+|---|---|---|---|
+| Dutch Rabbit | 19 (16) | 1.7 s | 19 |
+| Squirrel | 24 (22) | 1.5 s | 22 |
+| Kirby | 17 (16) | 1.8 s | 18 |
+| kitsune | 24 (17) | 52.9 s | 17 |
+| Color-change Pinwheel | 16 (12) | 0.2 s | 17 |
+| Marnie | 37 (10) | 15.6 s | 19 |
+
+None of these six is certified minimal: each cost is a minimum over the options the search gave,
+and Marnie's varies between runs.
+- **054 Hexagon** resolves (8 hidden rays). Without scaffold lines it was a local failure even with
+  no filter.
+- **Physical resolutions can be cheaper.** 016 needs 13 hidden rays (18 with the filter and no
+  scaffold lines, 15 with no filter) and 070 needs 12 (16 and 13).
+- **They can also be dearer**, where the unfiltered resolution used histories that are not
+  realizable: Squirrel, kitsune and Marnie.
+- **Time.** The 23 patterns resolved before take 12.7 s in total, against 15.2 s before scaffold
+  lines. Lookups are computed per vertex and per depth on demand, so the extra types cost little.
+  The median is 0.2 s.
+- **`--dl`** is what lets kitsune and Marnie finish: under the default arithmetic both time out at
+  150 s.
