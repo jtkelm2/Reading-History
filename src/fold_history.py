@@ -578,6 +578,7 @@ class Checker:
         if extra is not None:
             self.n += 1; a = z3.FreshBool('q'); self.s.add(z3.Implies(a, extra)); lits.append(a)
         while True:
+            if time.monotonic() >= self.deadline: self.unknown += 1; return 'unknown'   # out of time: not proven
             self.s.set('timeout', max(1, int(1000 * (self.deadline - time.monotonic()))))
             r = self.s.check(lits)
             if r == z3.unsat: return None
@@ -675,6 +676,8 @@ def reduce(nodes, lt):
 
 
 def report(P, folds, lt, paths, collapsed, out):
+    import os
+    if os.path.dirname(out): os.makedirs(os.path.dirname(out), exist_ok=True)
     import networkx as nx
     import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot as plt
     V = P.V; reps = list(folds)
@@ -826,7 +829,9 @@ def main(argv):
     def timed(p, k, c=0):
         t1 = time.monotonic(); r = opt(p, k, c); spent[0] += time.monotonic() - t1; return r
     P.options = timed
-    res = solve(P, log=lambda s: None if analyse_it is False else print(s, flush=True), budget=budget)
+    deadline = t0 + budget            # --budget bounds the whole run: solve, geometries and analysis
+    left = lambda: max(1.0, deadline - time.monotonic())
+    res = solve(P, log=lambda s: None if analyse_it is False else print(s, flush=True), budget=left())
     summary['status'] = res['status']; summary['local_s'] = round(spent[0], 2)
     if table:
         summary['table'] = T.stats
@@ -835,14 +840,17 @@ def main(argv):
         if k in res: summary[k] = res[k]
     if res['status'] == 'ok' and analyse_it:
         if geometry == 'shortest' and res['choice']:
-            G, complete = geometries(P, res, budget=budget)
+            G, complete = geometries(P, res, budget=left())
             summary.update(minimal_geometries=len(G), geometries_complete=complete)
             if complete:
                 g = min(G, key=lambda g: g['length'])
                 res = dict(res, m=g['m'], choice=g['choice'])
             else: summary['geometry'] = 'found (the minimal geometries were not all enumerated)'
-        folds, lt, val, paths = analyse(P, res, budget=budget)
+        folds, lt, val, paths = analyse(P, res, budget=left())
         summary['analysis_unknown'] = res['analysis_unknown']
+        if res['analysis_unknown']:
+            print('  warning: %d queries undecided within the budget; the folds may be finer and the order smaller'
+                  ' than with more time (raise --budget)' % res['analysis_unknown'], file=sys.stderr)
         for (p, r), (pts, how) in sorted(paths.items(), key=lambda kv: (kv[0][0], kv[0][1])):
             print('  hidden from %d at %.2f deg: %s, %s' % (p, P.deg(r), ' -> '.join('(%.3f, %.3f)' % q for q in pts), how))
         summary.update(report(P, folds, lt, paths, res['collapses'], out or path.split('/')[-1].rsplit('.', 1)[0]))

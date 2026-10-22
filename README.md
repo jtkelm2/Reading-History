@@ -82,7 +82,9 @@ python3 src/fold_history.py --table=tables --rigid=reverse --cells=cells --dl ex
 
 Options:
 - `--out=PREFIX` sets where the figures go (default: the input's basename).
-- `--budget=SECONDS` limits the solve.
+- `--budget=SECONDS` bounds the whole run (default 300; the dragon's full analysis needs about
+  90 s). If the analysis runs out of time, it prints a warning and reports what it proved by then:
+  the folds may be finer and the order smaller than with more time, never wrong.
 - `--tol=RADIANS` fixes the direction tolerance. Otherwise 1e-6, 1e-4, 5e-4 and 2e-3 are tried in
   turn until every vertex is flat.
 - `--triage` skips the analysis and the figures.
