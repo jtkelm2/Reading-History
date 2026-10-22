@@ -41,12 +41,20 @@ header { display: grid; gap: 10px; margin-bottom: 22px; }
 .legend .sw { display: inline-flex; align-items: center; gap: 6px; }
 .ramp { display: inline-flex; gap: 2px; }
 .ramp i { width: 18px; height: 10px; display: inline-block; border-radius: 2px; }
-.layout { display: grid; grid-template-columns: minmax(300px, 420px) minmax(0, 1fr); gap: 28px; align-items: start; }
+.layout { display: grid; grid-template-columns: minmax(320px, 540px) minmax(0, 1fr); gap: 28px; align-items: start; }
 @media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
 .side { display: grid; gap: 16px; position: sticky; top: max(12px, env(safe-area-inset-top, 0px)); max-height: calc(100vh - 24px); overflow: auto; }
 @media (max-width: 900px) { .side { position: static; max-height: none; overflow: visible; } }
 .box { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 14px; }
-#atlas { width: 100%; height: auto; display: block; touch-action: manipulation; }
+#atlas { width: 100%; height: auto; display: block; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
+#atlas.zoomed { touch-action: none; }
+#atlas.dragging { cursor: grabbing; }
+.atlasbox { position: relative; }
+.zoomrow { display: flex; gap: 10px; align-items: center; margin-top: 6px; }
+.zoombar { display: flex; gap: 4px; flex: 0 0 auto; }
+.zoombar button { width: 30px; height: 30px; padding: 0; font: 600 1rem var(--f-body); background: var(--panel); }
+.zoombar button.wide { width: auto; padding: 0 8px; font-size: 0.78rem; }
+.zoomhint { font-size: 0.75rem; color: var(--ink-3); min-width: 0; }
 #atlas .seg { fill: none; stroke-linecap: round; }
 #atlas .hit { stroke: transparent; stroke-width: 12; fill: none; cursor: pointer; }
 #atlas .axis text { fill: var(--ink-3); font: 10px var(--f-mono); }
@@ -119,17 +127,19 @@ a.link, button.link { color: var(--ink); text-decoration: underline; text-decora
       Pick a stratum to see the histories that are realizable with paper (rigidly, or with reverse folds), step by step.</p>
     <div class="legend" aria-label="Legend">
       <span class="sw">Fewest hidden rays needed <span class="ramp" aria-hidden="true"><i style="background:var(--k0)"></i><i style="background:var(--k1)"></i><i style="background:var(--k2)"></i><i style="background:var(--k3)"></i><i style="background:var(--k4)"></i></span> 0 → 4</span>
-      <span class="sw"><svg width="28" height="8" aria-hidden="true"><line x1="2" y1="4" x2="26" y2="4" stroke="var(--ink-2)" stroke-width="3" stroke-linecap="round"/></svg>a rigid history exists</span>
-      <span class="sw"><svg width="28" height="8" aria-hidden="true"><line x1="2" y1="4" x2="26" y2="4" stroke="var(--ink-2)" stroke-width="3" stroke-dasharray="4 4"/></svg>reverse folds needed</span>
-      <span class="sw"><svg width="28" height="8" aria-hidden="true"><line x1="2" y1="4" x2="26" y2="4" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="1 3"/></svg>no physical history</span>
+      <span class="sw"><svg width="28" height="8" aria-hidden="true"><line x1="2" y1="4" x2="26" y2="4" stroke="var(--ink-2)" stroke-width="3.2" stroke-linecap="round"/></svg>a rigid history exists</span>
+      <span class="sw"><svg width="28" height="8" aria-hidden="true"><line x1="2" y1="4" x2="26" y2="4" stroke="var(--ink-2)" stroke-width="1.4"/></svg>reverse folds needed</span>
+      <span class="sw"><svg width="28" height="8" aria-hidden="true"><line x1="2" y1="4" x2="26" y2="4" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="1 3"/></svg>part of a stratum with nothing realizable</span>
       <span class="sw"><svg width="12" height="12" aria-hidden="true"><path d="M6 1 L11 6 L6 11 L1 6 Z" fill="none" stroke="var(--ink)" stroke-width="1.4"/></svg>vertex used in a corpus pattern</span>
     </div>
   </header>
 
   <div class="layout">
     <aside class="side">
-      <div class="box">
+      <div class="box atlasbox">
         <svg id="atlas" viewBox="0 0 400 400" role="img" aria-label="Atlas of strata in the triangle of degree-4 vertex shapes"></svg>
+        <div class="zoomrow"><div class="zoombar"><button type="button" id="zin" aria-label="Zoom in">+</button><button type="button" id="zout" aria-label="Zoom out">−</button><button type="button" class="wide" id="zreset">Reset</button></div>
+        <p class="zoomhint">Scroll or pinch to zoom, drag to pan. Only strata with physical histories are drawn; the others are listed below the index.</p></div>
       </div>
       <form class="box find" id="find">
         <h3>Find a vertex</h3>
@@ -224,28 +234,42 @@ function signature(card, dirs, Q) {
 // ------------------------------------------------------------------ atlas
 const svgNS = 'http://www.w3.org/2000/svg';
 const el = (tag, attrs, parent) => { const e = document.createElementNS(svgNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
-const AT = { x0: 44, y0: 366, w: 336 };            // 0..90 deg on both axes
-const ax = d => AT.x0 + AT.w * d / 90, ay = d => AT.y0 - AT.w * d / 90;
+const AT = { x0: 44, y0: 366, w: 336 };            // the plot square, in viewBox units
+const FULL = { x: -2, y: -2, span: 94 };            // the view window, in degrees
+let view = { ...FULL };
+const ax = d => AT.x0 + AT.w * (d - view.x) / view.span, ay = d => AT.y0 - AT.w * (d - view.y) / view.span;
+const invx = px => view.x + (px - AT.x0) * view.span / AT.w, invy = py => view.y + (AT.y0 - py) * view.span / AT.w;
 const atlas = document.getElementById('atlas'), tip = document.getElementById('tip');
 let state = { s: null, t: 0, showDominated: false, onlyHere: false, view: 'stratum', Q: null };
 
 function drawAtlas() {
   atlas.innerHTML = '';
-  el('path', { d: `M${ax(0)} ${ay(0)} L${ax(90)} ${ay(90)} L${ax(0)} ${ay(90)} Z`, fill: 'var(--bg)', stroke: 'var(--rule)' }, atlas);
-  const grid = el('g', { class: 'grid' }, atlas), axis = el('g', { class: 'axis' }, atlas);
-  for (const d of [22.5, 45, 67.5]) {
-    el('line', { x1: ax(0), y1: ay(d), x2: ax(d), y2: ay(d) }, grid);
-    el('line', { x1: ax(d), y1: ay(d), x2: ax(d), y2: ay(90) }, grid);
+  atlas.classList.toggle('zoomed', view.span < FULL.span - 1e-6);
+  const defs = el('defs', {}, atlas), cp = el('clipPath', { id: 'plotclip' }, defs);
+  el('rect', { x: AT.x0, y: AT.y0 - AT.w, width: AT.w, height: AT.w }, cp);
+  const axis = el('g', { class: 'axis' }, atlas);
+  const plot = el('g', { 'clip-path': 'url(#plotclip)' }, atlas);
+  el('path', { d: `M${ax(0)} ${ay(0)} L${ax(90)} ${ay(90)} L${ax(0)} ${ay(90)} Z`, fill: 'var(--bg)', stroke: 'var(--rule)' }, plot);
+  // grid and ticks: the coarsest step 22.5 / 2^k giving at least 4 ticks in the window
+  const STEPS = [22.5, 11.25, 5.625, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01];
+  const step = STEPS.find(st => view.span / st >= 4) || STEPS[STEPS.length - 1];
+  const grid = el('g', { class: 'grid' }, plot);
+  const lo = d => Math.ceil(d / step) * step;
+  const decimals = step >= 5 ? 3 : Math.max(0, Math.ceil(-Math.log10(step) - 1e-9));
+  for (let d = lo(Math.max(0, view.x)); d <= Math.min(90, view.x + view.span) + 1e-9; d += step) {
+    if (d > 0 && d < 90) el('line', { x1: ax(d), y1: ay(Math.max(d, 0)), x2: ax(d), y2: ay(90) }, grid);
+    el('text', { x: ax(d), y: AT.y0 - AT.w - 6, 'text-anchor': 'middle' }, axis).textContent = +d.toFixed(decimals);
   }
-  for (const d of [0, 22.5, 45, 67.5, 90]) {
-    el('text', { x: ax(d), y: ay(90) - 8, 'text-anchor': 'middle' }, axis).textContent = d;
-    el('text', { x: ax(0) - 6, y: ay(d) + 3, 'text-anchor': 'end' }, axis).textContent = d;
+  for (let d = lo(Math.max(0, view.y)); d <= Math.min(90, view.y + view.span) + 1e-9; d += step) {
+    if (d > 0 && d < 90) el('line', { x1: ax(0), y1: ay(d), x2: ax(d), y2: ay(d) }, grid);
+    el('text', { x: AT.x0 - 6, y: ay(d) + 3, 'text-anchor': 'end' }, axis).textContent = +d.toFixed(decimals);
   }
-  el('text', { x: ax(45), y: ay(90) - 22, 'text-anchor': 'middle' }, axis).textContent = 'θ₁ (deg) →';
-  const yl = el('text', { x: 12, y: ay(45), 'text-anchor': 'middle', transform: `rotate(-90 12 ${ay(45)})` }, axis); yl.textContent = 'θ₂ (deg) →';
-  const lay0 = el('g', {}, atlas), lay1 = el('g', {}, atlas), selL = el('g', { id: 'selL' }, atlas), pinL = el('g', {}, atlas), hitL = el('g', {}, atlas);
+  el('text', { x: AT.x0 + AT.w / 2, y: AT.y0 - AT.w - 20, 'text-anchor': 'middle' }, axis).textContent = 'θ₁ (deg) →';
+  const ym = AT.y0 - AT.w / 2, yl = el('text', { x: 10, y: ym, 'text-anchor': 'middle', transform: `rotate(-90 10 ${ym})` }, axis); yl.textContent = 'θ₂ (deg) →';
+  const lay1 = el('g', {}, plot), selL = el('g', { id: 'selL' }, plot), pinL = el('g', {}, plot), hitL = el('g', {}, plot);
   for (const s of S) {
-    const layer = s.cards.length ? lay1 : lay0;
+    if (!s.cards.length) continue;                    // strata with nothing realizable are only in the index
+    const layer = lay1;
     for (const f of s.folds) {
       if (s.kind === 'point') {
         el('circle', { cx: ax(deg(f[0][0])), cy: ay(deg(f[0][1])), r: s.cards.length ? 4.5 : 2.5, fill: s.cards.length ? kColor(s.minK) : 'var(--ink-3)', stroke: 'var(--panel)', 'stroke-width': 1.5 }, layer);
@@ -261,7 +285,7 @@ function drawAtlas() {
         const p = at(a), q = at(b);
         const attrs = { x1: ax(deg(p[0])), y1: ay(deg(p[1])), x2: ax(deg(q[0])), y2: ay(deg(q[1])), class: 'seg' };
         if (k == null) Object.assign(attrs, { stroke: 'var(--ink-3)', 'stroke-width': 1, 'stroke-dasharray': '1 3', opacity: 0.7 });
-        else Object.assign(attrs, { stroke: kColor(k), 'stroke-width': 3 }, rigid ? {} : { 'stroke-dasharray': '5 4' });
+        else Object.assign(attrs, { stroke: kColor(k), 'stroke-width': rigid ? 3.2 : 1.4 });
         el('line', attrs, layer);
       }
       const h = el('line', { x1: ax(deg(A[0])), y1: ay(deg(A[1])), x2: ax(deg(B[0])), y2: ay(deg(B[1])), class: 'hit' }, hitL);
@@ -274,15 +298,56 @@ function drawAtlas() {
     const h = el('circle', { cx, cy, r: 8, fill: 'transparent', style: 'cursor:pointer' }, hitL);
     h.addEventListener('mousemove', e => showTip(e, `<b>${fmt(x)}, ${fmt(y)}</b><br>${names.length} pattern${names.length > 1 ? 's' : ''}: ${names.map(n => n.replace(/^\d+_/, '').replace(/_/g, ' ')).join(', ')}`));
     h.addEventListener('mouseleave', hideTip);
-    h.addEventListener('click', () => openVertex([x / 180, y / 180], names));
+    h.addEventListener('click', () => { if (!dragged) openVertex([x / 180, y / 180], names); });
   }
-  el('g', { id: 'cur' }, atlas);
+  el('g', { id: 'cur' }, plot);
+  if (state.view === 'vertex' || state.s) markAtlas();
 }
 function bindHit(h, s) {
   h.addEventListener('mousemove', e => showTip(e, `<b>${s.cond}</b><br>${s.cards.length ? `${s.nShown} histor${s.nShown === 1 ? 'y' : 'ies'} shown, fewest hidden rays ${s.minK}` : 'no physical history'}`));
   h.addEventListener('mouseleave', hideTip);
-  h.addEventListener('click', () => openStratum(s, defaultT(s)));
+  h.addEventListener('click', () => { if (!dragged) openStratum(s, defaultT(s)); });
 }
+// ------------------------------------------------------------------ zoom and pan
+let dragged = false, frame = 0;
+function setView(v) {
+  const span = Math.min(FULL.span, Math.max(FULL.span / 128, v.span));
+  const x = Math.min(FULL.x + FULL.span - span, Math.max(FULL.x, v.x)), y = Math.min(FULL.y + FULL.span - span, Math.max(FULL.y, v.y));
+  view = { x, y, span };
+  if (!frame) frame = requestAnimationFrame(() => { frame = 0; drawAtlas(); });
+}
+function svgPoint(e) { const r = atlas.getBoundingClientRect(); return [(e.clientX - r.left) * 400 / r.width, (e.clientY - r.top) * 400 / r.height]; }
+function zoomAt(px, py, f) {                          // keep the point under (px, py) fixed
+  const dx = invx(px), dy = invy(py), span = Math.min(FULL.span, Math.max(FULL.span / 128, view.span / f)), k = span / view.span;
+  setView({ x: dx - (dx - view.x) * k, y: dy - (dy - view.y) * k, span });
+}
+atlas.addEventListener('wheel', e => { e.preventDefault(); const [px, py] = svgPoint(e); zoomAt(px, py, Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
+const pointers = new Map(); let pinch0 = null, pan0 = null;
+atlas.addEventListener('pointerdown', e => {
+  pointers.set(e.pointerId, svgPoint(e)); dragged = false;
+  if (pointers.size === 1) pan0 = { p: svgPoint(e), view: { ...view } };
+  if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch0 = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), span: view.span }; }
+});
+atlas.addEventListener('pointermove', e => {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.set(e.pointerId, svgPoint(e));
+  if (pointers.size === 2 && pinch0) {
+    const [a, b] = [...pointers.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+    dragged = true; zoomAt((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, view.span / (pinch0.span * pinch0.d / d));
+  } else if (pointers.size === 1 && pan0) {
+    const p = svgPoint(e), dx = p[0] - pan0.p[0], dy = p[1] - pan0.p[1];
+    if (!dragged && Math.hypot(dx, dy) < 4) return;
+    if (!dragged) { dragged = true; atlas.setPointerCapture(e.pointerId); atlas.classList.add('dragging'); hideTip(); }
+    const k = pan0.view.span / AT.w;
+    setView({ x: pan0.view.x - dx * k, y: pan0.view.y + dy * k, span: pan0.view.span });
+  }
+});
+const endPointer = e => { pointers.delete(e.pointerId); if (pointers.size < 2) pinch0 = null; if (!pointers.size) { pan0 = null; atlas.classList.remove('dragging'); setTimeout(() => { dragged = false; }, 0); } };
+atlas.addEventListener('pointerup', endPointer); atlas.addEventListener('pointercancel', endPointer);
+atlas.addEventListener('dblclick', e => { const [px, py] = svgPoint(e); zoomAt(px, py, 2); });
+document.getElementById('zin').addEventListener('click', () => zoomAt(AT.x0 + AT.w / 2, AT.y0 - AT.w / 2, 2));
+document.getElementById('zout').addEventListener('click', () => zoomAt(AT.x0 + AT.w / 2, AT.y0 - AT.w / 2, 0.5));
+document.getElementById('zreset').addEventListener('click', () => setView({ ...FULL }));
 function showTip(e, html) { tip.innerHTML = html; tip.hidden = false; tip.style.left = Math.min(e.clientX + 14, innerWidth - 290) + 'px'; tip.style.top = (e.clientY + 14) + 'px'; }
 function hideTip() { tip.hidden = true; }
 function markAtlas() {
