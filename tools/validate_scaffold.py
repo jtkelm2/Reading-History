@@ -23,7 +23,7 @@ T = lookup.Table(sys.argv[1])
 kmax = {}
 for m in T.meta:
     if m.get('scaffold'): kmax[m['n']] = max(kmax.get(m['n'], -1), m['k'])
-seen = set()
+seen = set(); failed = False
 for path in sys.argv[2:]:
     P = resolve_tol(path); opt = lookup.options_for(T, P)
     out = {'file': path.rsplit('/', 1)[-1], 'vertices': 0, 'compared': 0, 'search_subset': 0, 'search': 0, 'table': 0,
@@ -53,3 +53,6 @@ for path in sys.argv[2:]:
                                             'only_search': [str(x) for x in list(A - B)[:2]]})
     out['seconds'] = round(time.time() - t0, 1)
     print(json.dumps(out), flush=True)
+    failed = failed or out['only_search'] or out['table_unpinned']
+print('all search histories in the tables, all table histories pinned' if not failed else 'DIFFERENCES FOUND')
+sys.exit(1 if failed else 0)

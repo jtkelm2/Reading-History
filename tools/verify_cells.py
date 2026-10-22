@@ -3,7 +3,8 @@
    and evaluating the tree there reaches a leaf with that value.
 2. Corpus: at every rotation of every corpus vertex shape of the tree's degree, for every type,
    the tree's value equals the numeric computation.
-Usage: python3 tools/verify_cells.py CELLS.json TABLE.json [--witnesses=PATH] [pattern.fold ...]"""
+Usage: python3 tools/verify_cells.py CELLS.json TABLE.json [--witnesses=PATH] [pattern.fold ...]
+(the witnesses are written by `src/cells.py build ... --witnesses=PATH`; they are not committed)"""
 import sys, json, math
 from common import fh, resolve_tol
 sys.path.insert(0, str(fh.__file__).rsplit('/', 1)[0])
@@ -13,6 +14,9 @@ WP = next((x[12:] for x in sys.argv if x.startswith('--witnesses=')), None)
 sys.argv = [x for x in sys.argv if not x.startswith('--witnesses=')]
 C = json.load(open(sys.argv[1])); T = json.load(open(sys.argv[2]))
 if WP: C['witnesses'] = json.load(open(WP))['witnesses']
+if 'witnesses' not in C:                  # cells.py build --witnesses=PATH writes them separately
+    print('no witnesses given (--witnesses=PATH): checking against the corpus only')
+    C['witnesses'] = [[] for _ in C['trees']]
 types = T['types'][:len(C['trees'])]; n = T['meta']['n']
 den = C['meta'].get('den', 4)
 bad = []; nw = 0

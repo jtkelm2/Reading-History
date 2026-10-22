@@ -1,4 +1,4 @@
-"""Rigid realizability of a local history (flatvertex.tex, Definitions 2.1, 2.2, 3.1, 3.2).
+"""Rigid realizability of a local history (paper/flatvertex.tex, Definitions 2.1, 2.2, 3.1, 3.2).
 
 A layered state is a flat state S with, at every point u of the image circle outside the image
 points E_S, a strict total order (bottom to top) on the faces whose image contains u, locally
@@ -12,7 +12,7 @@ Orders are stored on the arcs between consecutive image points. All geometric de
 through an arithmetic object (src/geom.py): Num() for floats in radians, or Sym(...) for exact
 affine forms whose signs an oracle decides; the same code serves both.
 
-Usage: python3 src/rigid.py   (checks the three histories of flatvertex.tex, Section 4)
+Usage: python3 src/rigid.py   (checks the three histories of paper/flatvertex.tex, Section 4)
 """
 import itertools, math
 from functools import cmp_to_key

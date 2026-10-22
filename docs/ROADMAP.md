@@ -38,32 +38,45 @@ Does every flat vertex have a local history with cancellations, using single-lin
 ## 3. Search engineering
 - **Fish Base:** shrink each unsat core to a minimal one before expanding. Successive cores
   had 4, 19, 6 and 16 vertices, and each round was slower than the last.
-- **Butterfly Base, Marnie, Dutch Rabbit, Sheep:** time-outs not yet diagnosed. These are
-  good tests of the bend limit and the pass-through approximation.
+- **Butterfly Base, Sheep:** the local search times out; the lookup tables have no entries for
+  their vertices of degree 8 and 12. Dutch Rabbit and Marnie resolve with the tables
+  (`docs/lookup_tables.md`).
+- **The paper's corpus table** (`results/corpus_results.*`) was computed with an earlier version
+  of the local search. The current search resolves 41 of the 48 patterns, not 42, and differs on
+  015, 048, 054, 062 and 089 (`results/lookup/search.jsonl`). Rerun the corpus and update the paper's corpus section and
+  the abstract.
 - **Cancelled segments without a bend limit:** trace the path implied by the current model
   (it reflects at earlier creases and passes later ones) and refute it if it does not close.
 - **Exact pass-through:** add the passing segment's hidden rays to the history at the vertex.
 
-## 3a. Which resolutions the folds and order range over
+## 4. Lookup tables
+- **Collapse steps.** Every table entry needs a condition on the angles, so a degree-4 vertex in
+  general position has none, although it folds rigidly by collapsing all four creases at once.
+  Add collapse steps to the tables, with their realizability decided in the layered model.
+- **Higher degree.** Tables of degree 8 (needed by Butterfly Base, Fish Base, the Gentle Dragon
+  and others) and degree-6 scaffold types with k = 3.
+- **`--dl` by default** after a corpus comparison: it changed no outcome except to resolve more.
+
+## 5. Which resolutions the folds and order range over
 Different minimal geometries of the dragon force different orders (814 to 1330 relations among
 the first ten of its 149 minimal geometries). The paper fixes the shortest minimal geometry
 (unique for the dragon); `analyse(scope='minimal')` gives what every minimal resolution forces
 (78 folds, 610 relations for the dragon). Decide which the paper should use.
 
-## 4. From folds to moves
+## 6. From folds to moves
 Two folds made by one move both map onto the move's fold line under the folding map at that
 moment. This is a global test for merging folds (for example mirror pairs) into moves.
 
-## 5. Physical validity and colour
+## 7. Physical validity and colour
 Couple the method with Flat-Folder's layer-order solver, so that intermediate states can be
 checked and mountain/valley labels predicted.
 
-## 6. Validation against ground truth
+## 8. Validation against ground truth
 Check that known folding sequences (crane, Yakko, kabuto, published designer diagrams) are
 linear extensions of the forced order, and that the recovered cancelled segments match the
 known precreases.
 
-## 7. Related work to cite
+## 9. Related work to cite
 - Akitaya (2013): the extended crease pattern (one edge per fold) and a per-vertex complexity
   of degree minus two. These overlap with our folds and our excess-line cost.
 - Akitaya, Demaine, Ku, "Simple folding is really hard": their definition of a simple fold

@@ -20,7 +20,7 @@ cases.
 - The paper must read as a standalone document. Do not describe how the method or the paper
   used to be.
 
-## Code map (src/fold_history.py)
+## Code map (src/fold_history.py unless stated)
 - **Directions.** Directions are reals in [0, 2pi), compared with `eq`/`EPS`. `Pattern`
   clusters crease lines within `TOL` and snaps them to multiples of 2pi/N when some
   N <= `MAXN` (64) fits.
@@ -52,15 +52,19 @@ cases.
 - **Exact local search (src/exact_local.py).** Decides whether one vertex has a local history
   with k hidden rays in arbitrary directions: fixed cyclic order + step sequence makes (L),
   flatness and (C) linear (z3 over reals and integers), DFS over steps with pruning.
-- **Lookup tables (src/lookup.py, branch lookup-tables).** `build n k DIR` enumerates history types
-  (symbolic visible directions, no hidden-only steps) into `DIR/deg{n}_k{k}.json`; `build n k DIR
-  --scaffold` (branch scaffold-lines) the types with a scaffold step, i.e. a hidden-only step whose
-  line later steps pin (`eliminate`), into `DIR/deg{n}_k{k}_s.json`. `Table` and `options_for`
-  replace `Pattern.options` at runtime (`--table=DIR`); `--rigid --cells=DIR` filters by the exact
-  cells of src/cells.py; `--dl` runs the global search with z3's difference-logic arithmetic.
-  See docs/lookup_tables.md.
+- **Lookup tables (src/lookup.py).** `build n k DIR` enumerates anchored history types
+  (symbolic visible directions) into `DIR/deg{n}_k{k}.json`; `build n k DIR --scaffold` the types
+  with a scaffold step (hidden-only, its line pinned by later steps through `eliminate`) into
+  `DIR/deg{n}_k{k}_s.json`. `Table` and `options_for` replace `Pattern.options` at runtime
+  (`--table=DIR`). `--rigid --cells=DIR` filters by the exact cells of src/cells.py (layered model
+  of src/rigid.py, paper/flatvertex.tex). `--dl` runs the global search with z3's
+  difference-logic arithmetic. See docs/lookup_tables.md.
+- **Encyclopedia (docs/encyclopedia/).** `tools/encyclopedia_export.py` exports the degree-4 tables
+  and cells by stratum; `docs/encyclopedia/build.py` fills `page.html` with the export and
+  `core.js` (a port of the replay) into `degree4.html`; `tools/encyclopedia_check.py` checks the
+  export against the lookup.
 - **Tools.** `tools/common.py`: `resolve(path, geometry='found'|'shortest')`, `geometries`
-  (all minimal geometries, paths included).
+  (all minimal geometries, paths included). The README lists the checks and corpus scripts.
 
 ## Known warts
 - The snapping branch of `Pattern.__init__` used when no N fits is convoluted and has not
@@ -80,7 +84,7 @@ cases.
 - The owner asked to keep CPU use low: run one solver process at a time, under `nice -n 19`.
 
 ## Quick checks
-- `python3 tools/verify_examples.py` takes about a minute. It must report 15 folds,
+- `python3 tools/verify_examples.py` takes under a second. It must report 15 folds,
   30 relations and 19 Hasse edges for the running pattern, and 6 folds and 24 linear
   extensions for the body pattern.
 - `python3 src/fold_history.py --triage examples/komatsu_gentle_dragon.fold` must report

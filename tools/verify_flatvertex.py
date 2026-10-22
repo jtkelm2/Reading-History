@@ -1,4 +1,4 @@
-"""Recompute every computed claim of flatvertex.tex with src/rigid.py and assert it.
+"""Recompute every computed claim of paper/flatvertex.tex with src/rigid.py and assert it.
 Usage: python3 tools/verify_flatvertex.py"""
 import itertools, math, sys
 from common import fh

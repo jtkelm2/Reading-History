@@ -12,3 +12,4 @@ paper/*.toc
 *_hasse.dot
 *_folds.txt
 !paper/dragon_hasse.png
+.venv/

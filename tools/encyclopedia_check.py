@@ -108,3 +108,4 @@ for Q in sorted(special):
     dup += nb - len(b)
 print('special vertices checked', len(special), 'disagree', sb, '; cards equivalent to another card at their vertex', dup)
 print('generic vertices checked', tot, 'disagree', bad)
+sys.exit(1 if bad or sb else 0)
