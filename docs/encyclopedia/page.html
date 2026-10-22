@@ -1,0 +1,593 @@
+<title>Degree-4 Vertex Encyclopedia</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a fixed atlas column (the fundamental triangle and the index of strata) beside a detail
+   column (one stratum, or one vertex, with its history cards); stacked on narrow screens. */
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --ink: #17202b; --ink-2: #4a5566; --ink-3: #7b8594; --rule: #dde2ea;
+  --hidden: #c4502e; --sel: #e8a317; --track: #e7ebf1;
+  --k0: #6da7ec; --k1: #3987e5; --k2: #256abf; --k3: #184f95; --k4: #0d366b;
+  --rigid: #184f95; --rev: #6da7ec;
+  --f-display: "Spectral", Georgia, "Times New Roman", serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #14171c; --panel: #1b1f26; --ink: #e8ecf2; --ink-2: #b2bac6; --ink-3: #848d9a; --rule: #2c323c;
+  --hidden: #f07a55; --sel: #f2b73a; --track: #262b34;
+  --k0: #1c5cab; --k1: #2a78d6; --k2: #5598e7; --k3: #86b6ef; --k4: #b7d3f6;
+  --rigid: #86b6ef; --rev: #2a78d6; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #14171c; --panel: #1b1f26; --ink: #e8ecf2; --ink-2: #b2bac6; --ink-3: #848d9a; --rule: #2c323c;
+  --hidden: #f07a55; --sel: #f2b73a; --track: #262b34;
+  --k0: #1c5cab; --k1: #2a78d6; --k2: #5598e7; --k3: #86b6ef; --k4: #b7d3f6;
+  --rigid: #86b6ef; --rev: #2a78d6; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body); }
+.wrap { max-width: 1320px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 600; text-wrap: balance; margin: 0; }
+h1 { font-size: 2.1rem; line-height: 1.15; letter-spacing: -0.01em; }
+h2 { font-size: 1.6rem; line-height: 1.2; }
+h3 { font-size: 1.05rem; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+p { margin: 0; }
+.lede { max-width: 68ch; color: var(--ink-2); }
+header { display: grid; gap: 10px; margin-bottom: 22px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; font-size: 0.82rem; color: var(--ink-2); }
+.legend .sw { display: inline-flex; align-items: center; gap: 6px; }
+.ramp { display: inline-flex; gap: 2px; }
+.ramp i { width: 18px; height: 10px; display: inline-block; border-radius: 2px; }
+.layout { display: grid; grid-template-columns: minmax(300px, 420px) minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+.side { display: grid; gap: 16px; position: sticky; top: max(12px, env(safe-area-inset-top, 0px)); max-height: calc(100vh - 24px); overflow: auto; }
+@media (max-width: 900px) { .side { position: static; max-height: none; overflow: visible; } }
+.box { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 14px; }
+#atlas { width: 100%; height: auto; display: block; touch-action: manipulation; }
+#atlas .seg { fill: none; stroke-linecap: round; }
+#atlas .hit { stroke: transparent; stroke-width: 12; fill: none; cursor: pointer; }
+#atlas .axis text { fill: var(--ink-3); font: 10px var(--f-mono); }
+#atlas .grid line { stroke: var(--rule); stroke-width: 0.6; }
+.tip { position: fixed; pointer-events: none; background: var(--panel); color: var(--ink); border: 1px solid var(--rule);
+  border-radius: 6px; padding: 6px 8px; font-size: 0.8rem; max-width: 280px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); z-index: 20; }
+form.find { display: grid; gap: 8px; }
+.angles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.angles label { display: grid; gap: 2px; font-size: 0.75rem; color: var(--ink-3); }
+.angles input { width: 100%; font: 0.9rem var(--f-mono); padding: 5px 6px; border: 1px solid var(--rule); border-radius: 5px;
+  background: var(--bg); color: var(--ink); }
+button { font: 500 0.85rem var(--f-body); color: var(--ink); background: var(--bg); border: 1px solid var(--rule);
+  border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+button:hover { border-color: var(--ink-3); }
+button.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+:focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; }
+.msg { font-size: 0.82rem; color: var(--hidden); min-height: 1.2em; }
+.index { display: grid; gap: 2px; font-size: 0.85rem; }
+.index button { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 8px; align-items: center; text-align: left;
+  border: 0; background: transparent; padding: 4px 6px; border-radius: 5px; }
+.index button:hover, .index button[aria-current="true"] { background: var(--track); }
+.index .chip { width: 12px; height: 12px; border-radius: 3px; }
+.index .n { color: var(--ink-3); font-family: var(--f-mono); font-size: 0.78rem; }
+details summary { cursor: pointer; color: var(--ink-2); font-size: 0.85rem; margin-top: 6px; }
+.detail { display: grid; gap: 18px; min-width: 0; }
+.head { display: grid; gap: 6px; }
+.facts { display: flex; flex-wrap: wrap; gap: 4px 16px; color: var(--ink-2); font-size: 0.85rem; }
+.vertexbox { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 18px; align-items: center; }
+@media (max-width: 560px) { .vertexbox { grid-template-columns: minmax(0, 1fr); justify-items: center; } }
+.controls { display: grid; gap: 10px; min-width: 0; width: 100%; }
+.readout { display: grid; grid-template-columns: repeat(4, auto); gap: 4px 14px; justify-content: start; font-size: 0.92rem; }
+.readout span { color: var(--ink-3); }
+input[type=range] { width: 100%; accent-color: var(--ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { font: 0.78rem var(--f-mono); padding: 3px 8px; }
+.chips button.pin::before { content: "◆ "; color: var(--ink-3); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 0.85rem; color: var(--ink-2); }
+.toolbar label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.cards { display: grid; gap: 12px; }
+.card { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 12px 14px; display: grid; gap: 10px; min-width: 0; }
+.card.off { opacity: 0.55; }
+.card .top { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+.card .num { font-family: var(--f-mono); color: var(--ink-3); font-size: 0.8rem; }
+.card .what { font-weight: 600; }
+.status { font-size: 0.75rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--rule); color: var(--ink-2); }
+.status.rigid { background: var(--rigid); color: var(--panel); border-color: var(--rigid); }
+.status.rev { border-color: var(--rev); color: var(--ink); background: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, var(--rev) 35%, transparent) 4px 7px); }
+.tag { font-size: 0.72rem; color: var(--hidden); border: 1px dashed var(--hidden); border-radius: 4px; padding: 0 6px; }
+.formula { font-family: var(--f-mono); font-size: 0.82rem; color: var(--ink-2); overflow-wrap: anywhere; }
+.strip { width: 100%; height: 16px; display: block; }
+.film { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+.frame { flex: 0 0 auto; width: 96px; display: grid; gap: 2px; justify-items: center; }
+.frame svg { width: 96px; height: 96px; display: block; }
+.frame .cap { font-size: 0.72rem; color: var(--ink-2); text-align: center; line-height: 1.25; font-family: var(--f-mono); }
+.empty { color: var(--ink-3); font-size: 0.9rem; }
+.group { display: grid; gap: 10px; }
+.group > .gh { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; border-top: 1px solid var(--rule); padding-top: 12px; }
+a.link, button.link { color: var(--ink); text-decoration: underline; text-decoration-color: var(--ink-3); background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+.method { color: var(--ink-2); font-size: 0.85rem; max-width: 80ch; display: grid; gap: 6px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Lookup tables · degree 4 · up to symmetry</span>
+    <h1>Degree-4 Vertex Encyclopedia</h1>
+    <p class="lede">A flat degree-4 vertex is fixed by two adjacent sector angles, since θ₃ = 180° − θ₁ and θ₄ = 180° − θ₂.
+      Rotating and mirroring the vertex leaves one triangle of shapes, θ₁ ≤ θ₂ ≤ 90°: θ₁ is the smallest sector and θ₂ its smaller neighbour.
+      Every local history in the tables needs a condition on the angles, so it lives on a line or at a point of that triangle, called its <em>stratum</em>.
+      Pick a stratum to see the histories that are realizable with paper (rigidly, or with reverse folds), step by step.</p>
+    <div class="legend" aria-label="Legend">
+      <span class="sw">Fewest hidden rays needed <span class="ramp" aria-hidden="true"><i style="background:var(--k0)"></i><i style="background:var(--k1)"></i><i style="background:var(--k2)"></i><i style="background:var(--k3)"></i><i style="background:var(--k4)"></i></span> 0 → 4</span>
+      <span class="sw"><svg width="28" height="8" aria-hidden="true"><line x1="2" y1="4" x2="26" y2="4" stroke="var(--ink-2)" stroke-width="3" stroke-linecap="round"/></svg>a rigid history exists</span>
+      <span class="sw"><svg width="28" height="8" aria-hidden="true"><line x1="2" y1="4" x2="26" y2="4" stroke="var(--ink-2)" stroke-width="3" stroke-dasharray="4 4"/></svg>reverse folds needed</span>
+      <span class="sw"><svg width="28" height="8" aria-hidden="true"><line x1="2" y1="4" x2="26" y2="4" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="1 3"/></svg>no physical history</span>
+      <span class="sw"><svg width="12" height="12" aria-hidden="true"><path d="M6 1 L11 6 L6 11 L1 6 Z" fill="none" stroke="var(--ink)" stroke-width="1.4"/></svg>vertex used in a corpus pattern</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="side">
+      <div class="box">
+        <svg id="atlas" viewBox="0 0 400 400" role="img" aria-label="Atlas of strata in the triangle of degree-4 vertex shapes"></svg>
+      </div>
+      <form class="box find" id="find">
+        <h3>Find a vertex</h3>
+        <div class="angles">
+          <label>θ₁ <input id="th1" inputmode="decimal" value="22.5"></label>
+          <label>θ₂ <input id="th2" inputmode="decimal" value="90"></label>
+          <label>θ₃ <input id="th3" inputmode="decimal" value="157.5"></label>
+          <label>θ₄ <input id="th4" inputmode="decimal" value="90"></label>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center"><button class="primary" type="submit">Show histories</button><span class="msg" id="findmsg"></span></div>
+      </form>
+      <div class="box">
+        <h3>Strata</h3>
+        <div class="index" id="index" style="margin-top:8px"></div>
+        <details><summary id="emptysum"></summary><div class="index" id="index0" style="margin-top:6px"></div></details>
+      </div>
+    </aside>
+    <main class="detail" id="detail"></main>
+  </div>
+  <div class="method box" style="margin-top:28px">
+    <h3>What this page is computed from</h3>
+    <p>The degree-4 tables (at most 4 hidden rays, scaffold lines included) and their exact realizability cells, exported by
+      <span class="mono">tools/encyclopedia_export.py</span>. Realizability along a stratum is exact: the cell trees split on forms that are affine along the line, so their intervals have rational endpoints, and every crossing, corpus vertex and isolated realizable point is evaluated exactly.
+      Histories that differ by a rotation or a mirror image are shown once.</p>
+    <p>Checked by <span class="mono">tools/encyclopedia_check.py</span>: at 480 random vertices and at all 66 special vertices, the histories on this page are exactly those the solver's lookup finds (with the physical filter), modulo the vertex's own symmetry. The page's replay of each history was compared with the Python replay at 2,658 points, with no difference.</p>
+    <p>A history is hidden as <em>dominated</em> when another on the same stratum needs fewer hidden rays and is at least as realizable (rigid, then reverse folds, then none) at every vertex of the stratum.</p>
+  </div>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+__CORE__
+</script>
+<script>
+const DATA = __DATA__;
+const SUB = ['₀','₁','₂','₃','₄','₅','₆','₇','₈','₉'];
+const sub = n => String(n).split('').map(c => SUB[+c] || c).join('');
+const fmt = x => { const r = Math.round(x * 1e4) / 1e4; return (Math.abs(r - Math.round(r)) < 1e-9 ? Math.round(r) : r) + '°'; };
+const deg = x => x * 180;
+const S = DATA.strata;
+S.forEach((s, i) => {
+  s.id = i;
+  s.minK = s.cards.length ? Math.min(...s.cards.map(c => c.k)) : null;
+  s.nShown = s.cards.filter(c => !c.dominated).length;
+  s.cond = condition(s);
+});
+
+function condition(s) {
+  if (s.kind === 'point') return 'θ₁ = ' + fmt(deg(s.point[0])) + ', θ₂ = ' + fmt(deg(s.point[1]));
+  let [a, b, c] = s.line;
+  if (b === 0) return 'θ₁ = ' + fmt(180 * c / a);
+  if (a === 0) return 'θ₂ = ' + fmt(180 * c / b);
+  const term = (k, v) => (Math.abs(k) === 1 ? '' : Math.abs(k)) + v;
+  if (c === 0) { // a θ1 = -b θ2
+    return a > 0 ? term(a, 'θ₁') + ' = ' + term(-b, 'θ₂') : term(-a, 'θ₁') + ' = ' + term(b, 'θ₂');
+  }
+  if (c < 0) { a = -a; b = -b; c = -c; }
+  const parts = [[a, 'θ₁'], [b, 'θ₂']];
+  const pos = parts.filter(p => p[0] > 0), neg = parts.filter(p => p[0] < 0);
+  let lhs = pos.map(p => term(p[0], p[1])).join(' + ');
+  if (neg.length) lhs += ' − ' + neg.map(p => term(-p[0], p[1])).join(' − ');
+  return lhs + ' = ' + fmt(180 * c);
+}
+const kColor = k => k == null ? 'var(--ink-3)' : 'var(--k' + k + ')';
+const pointAt = (s, t) => s.kind === 'point' ? s.point.slice() : [s.P0[0] + t * (s.P1[0] - s.P0[0]), s.P0[1] + t * (s.P1[1] - s.P0[1])];
+function valueAt(s, ci, t) {
+  if (s.kind === 'point') return s.cards[ci].iv[0][2] || 0;
+  const sp = s.special.find(r => Math.abs(r[0] - t) < 1e-9);
+  if (sp) return sp[2][ci] || 0;
+  for (const [lo, hi, v] of s.cards[ci].iv) if (lo < t && t < hi) return v || 0;
+  return 0;
+}
+const near = (p, q) => Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]) < 1e-9;
+const stabilizer = Q => GROUP.filter(g => near(act(g, Q), Q));
+function toTriangle(Q) {
+  const c = GROUP.map(g => act(g, Q)).filter(v => v[0] <= v[1] + 1e-9 && v[1] <= 0.5 + 1e-9 && v[0] >= -1e-9);
+  c.sort((u, v) => u[0] - v[0] || u[1] - v[1]); return c[0];
+}
+// isometry T_g on directions in the frame of the vertex Q, and its inverse
+const isoInv = (g, Q) => { const A = raysOf(Q)[g[0]]; return g[1] === 0 ? (y => nrm(y + A)) : (y => nrm(A - y)); };
+const iso = (g, Q) => { const A = raysOf(Q)[g[0]]; return g[1] === 0 ? (x => nrm(x - A)) : (x => nrm(A - x)); };
+function signature(card, dirs, Q) {
+  let best = null;
+  for (const g of stabilizer(Q)) {
+    const f = iso(g, Q);
+    const key = card.steps.map(T => T.map(j => (Math.round(f(dirs[j]) * 1e5) % Math.round(TP * 1e5))).sort((a, b) => a - b).join(',')).join('|');
+    if (best === null || key < best) best = key;
+  }
+  return best;
+}
+
+// ------------------------------------------------------------------ atlas
+const svgNS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs, parent) => { const e = document.createElementNS(svgNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+const AT = { x0: 44, y0: 366, w: 336 };            // 0..90 deg on both axes
+const ax = d => AT.x0 + AT.w * d / 90, ay = d => AT.y0 - AT.w * d / 90;
+const atlas = document.getElementById('atlas'), tip = document.getElementById('tip');
+let state = { s: null, t: 0, showDominated: false, onlyHere: false, view: 'stratum', Q: null };
+
+function drawAtlas() {
+  atlas.innerHTML = '';
+  el('path', { d: `M${ax(0)} ${ay(0)} L${ax(90)} ${ay(90)} L${ax(0)} ${ay(90)} Z`, fill: 'var(--bg)', stroke: 'var(--rule)' }, atlas);
+  const grid = el('g', { class: 'grid' }, atlas), axis = el('g', { class: 'axis' }, atlas);
+  for (const d of [22.5, 45, 67.5]) {
+    el('line', { x1: ax(0), y1: ay(d), x2: ax(d), y2: ay(d) }, grid);
+    el('line', { x1: ax(d), y1: ay(d), x2: ax(d), y2: ay(90) }, grid);
+  }
+  for (const d of [0, 22.5, 45, 67.5, 90]) {
+    el('text', { x: ax(d), y: ay(90) - 8, 'text-anchor': 'middle' }, axis).textContent = d;
+    el('text', { x: ax(0) - 6, y: ay(d) + 3, 'text-anchor': 'end' }, axis).textContent = d;
+  }
+  el('text', { x: ax(45), y: ay(90) - 22, 'text-anchor': 'middle' }, axis).textContent = 'θ₁ (deg) →';
+  const yl = el('text', { x: 12, y: ay(45), 'text-anchor': 'middle', transform: `rotate(-90 12 ${ay(45)})` }, axis); yl.textContent = 'θ₂ (deg) →';
+  const lay0 = el('g', {}, atlas), lay1 = el('g', {}, atlas), selL = el('g', { id: 'selL' }, atlas), pinL = el('g', {}, atlas), hitL = el('g', {}, atlas);
+  for (const s of S) {
+    const layer = s.cards.length ? lay1 : lay0;
+    for (const f of s.folds) {
+      if (s.kind === 'point') {
+        el('circle', { cx: ax(deg(f[0][0])), cy: ay(deg(f[0][1])), r: s.cards.length ? 4.5 : 2.5, fill: s.cards.length ? kColor(s.minK) : 'var(--ink-3)', stroke: 'var(--panel)', 'stroke-width': 1.5 }, layer);
+        const h = el('circle', { cx: ax(deg(f[0][0])), cy: ay(deg(f[0][1])), r: 8, fill: 'transparent', class: 'hit' }, hitL);
+        bindHit(h, s); continue;
+      }
+      const [A, B, [ta, tb]] = f;
+      const at = t => { const u = (t - ta) / (tb - ta); return [A[0] + u * (B[0] - A[0]), A[1] + u * (B[1] - A[1])]; };
+      const lo = Math.min(ta, tb), hi = Math.max(ta, tb);
+      for (const [x, y, k, rigid] of s.summary) {
+        const a = Math.max(lo, x), b = Math.min(hi, y);
+        if (b - a < 1e-12) continue;
+        const p = at(a), q = at(b);
+        const attrs = { x1: ax(deg(p[0])), y1: ay(deg(p[1])), x2: ax(deg(q[0])), y2: ay(deg(q[1])), class: 'seg' };
+        if (k == null) Object.assign(attrs, { stroke: 'var(--ink-3)', 'stroke-width': 1, 'stroke-dasharray': '1 3', opacity: 0.7 });
+        else Object.assign(attrs, { stroke: kColor(k), 'stroke-width': 3 }, rigid ? {} : { 'stroke-dasharray': '5 4' });
+        el('line', attrs, layer);
+      }
+      const h = el('line', { x1: ax(deg(A[0])), y1: ay(deg(A[1])), x2: ax(deg(B[0])), y2: ay(deg(B[1])), class: 'hit' }, hitL);
+      bindHit(h, s);
+    }
+  }
+  for (const [x, y, xe, ye, names] of DATA.pins) {
+    const cx = ax(x), cy = ay(y);
+    el('path', { d: `M${cx} ${cy - 5} L${cx + 5} ${cy} L${cx} ${cy + 5} L${cx - 5} ${cy} Z`, fill: 'var(--panel)', stroke: 'var(--ink)', 'stroke-width': 1.3 }, pinL);
+    const h = el('circle', { cx, cy, r: 8, fill: 'transparent', style: 'cursor:pointer' }, hitL);
+    h.addEventListener('mousemove', e => showTip(e, `<b>${fmt(x)}, ${fmt(y)}</b><br>${names.length} pattern${names.length > 1 ? 's' : ''}: ${names.map(n => n.replace(/^\d+_/, '').replace(/_/g, ' ')).join(', ')}`));
+    h.addEventListener('mouseleave', hideTip);
+    h.addEventListener('click', () => openVertex([x / 180, y / 180], names));
+  }
+  el('g', { id: 'cur' }, atlas);
+}
+function bindHit(h, s) {
+  h.addEventListener('mousemove', e => showTip(e, `<b>${s.cond}</b><br>${s.cards.length ? `${s.nShown} histor${s.nShown === 1 ? 'y' : 'ies'} shown, fewest hidden rays ${s.minK}` : 'no physical history'}`));
+  h.addEventListener('mouseleave', hideTip);
+  h.addEventListener('click', () => openStratum(s, defaultT(s)));
+}
+function showTip(e, html) { tip.innerHTML = html; tip.hidden = false; tip.style.left = Math.min(e.clientX + 14, innerWidth - 290) + 'px'; tip.style.top = (e.clientY + 14) + 'px'; }
+function hideTip() { tip.hidden = true; }
+function markAtlas() {
+  const selL = document.getElementById('selL'); selL.innerHTML = '';
+  const cur = document.getElementById('cur'); cur.innerHTML = '';
+  if (state.view === 'stratum' && state.s) for (const f of state.s.folds) {
+    if (state.s.kind === 'point') el('circle', { cx: ax(deg(f[0][0])), cy: ay(deg(f[0][1])), r: 9, fill: 'none', stroke: 'var(--sel)', 'stroke-width': 3, opacity: 0.8 }, selL);
+    else el('line', { x1: ax(deg(f[0][0])), y1: ay(deg(f[0][1])), x2: ax(deg(f[1][0])), y2: ay(deg(f[1][1])), stroke: 'var(--sel)', 'stroke-width': 9, 'stroke-linecap': 'round', opacity: 0.45 }, selL);
+  }
+  const Q = state.view === 'stratum' ? toTriangle(pointAt(state.s, state.t)) : toTriangle(state.Q);
+  if (Q) { el('circle', { cx: ax(deg(Q[0])), cy: ay(deg(Q[1])), r: 6, fill: 'var(--panel)', stroke: 'var(--ink)', 'stroke-width': 2.5 }, cur); }
+  document.querySelectorAll('.index button').forEach(b => b.setAttribute('aria-current', state.view === 'stratum' && state.s && +b.dataset.s === state.s.id ? 'true' : 'false'));
+}
+
+// ------------------------------------------------------------------ index
+function drawIndex() {
+  const withP = S.filter(s => s.cards.length).sort((a, b) => a.minK - b.minK || b.nShown - a.nShown || a.cond.localeCompare(b.cond));
+  const without = S.filter(s => !s.cards.length).sort((a, b) => a.cond.localeCompare(b.cond));
+  const row = s => { const b = document.createElement('button'); b.type = 'button'; b.dataset.s = s.id;
+    b.innerHTML = `<span class="chip" style="background:${s.cards.length ? kColor(s.minK) : 'var(--track)'}"></span><span class="mono">${s.cond}</span><span class="n">${s.cards.length ? s.nShown + (s.nShown === 1 ? ' history' : ' histories') : '—'}</span>`;
+    b.addEventListener('click', () => openStratum(s, defaultT(s))); return b; };
+  const ix = document.getElementById('index'); withP.forEach(s => ix.appendChild(row(s)));
+  const ix0 = document.getElementById('index0'); without.forEach(s => ix0.appendChild(row(s)));
+  document.getElementById('emptysum').textContent = `${without.length} strata whose table entries are never realizable`;
+}
+function defaultT(s) {
+  if (s.kind === 'point') return 0;
+  // the middle of the longest interval where something is realizable, else the middle of the domain
+  let best = null;
+  for (const [x, y, k] of s.summary) if (k != null && (!best || y - x > best[1] - best[0])) best = [x, y];
+  return best ? (best[0] + best[1]) / 2 : s.tmax / 2;
+}
+
+// ------------------------------------------------------------------ drawing a vertex and a history
+function rayLine(svg, cx, cy, R, dir, attrs) {
+  return el('line', Object.assign({ x1: cx, y1: cy, x2: cx + R * Math.cos(dir), y2: cy - R * Math.sin(dir) }, attrs), svg);
+}
+function drawVertex(svg, Q) {
+  svg.innerHTML = '';
+  const cx = 110, cy = 110, R = 80, A = raysOf(Q), th = [Q[0], Q[1], 1 - Q[0], 1 - Q[1]].map(deg);
+  el('circle', { cx, cy, r: R, fill: 'none', stroke: 'var(--rule)' }, svg);
+  for (let i = 0; i < 4; i++) {
+    const a0 = A[i], a1 = i < 3 ? A[i + 1] : TP, mid = (a0 + a1) / 2;
+    el('text', { x: cx + 52 * Math.cos(mid), y: cy - 52 * Math.sin(mid) + 4, 'text-anchor': 'middle', fill: 'var(--ink-3)', 'font-size': 11, 'font-family': 'IBM Plex Mono, monospace' }, svg).textContent = 'θ' + sub(i + 1);
+  }
+  A.forEach((d, i) => {
+    rayLine(svg, cx, cy, R, d, { stroke: 'var(--ink)', 'stroke-width': 2.2, 'stroke-linecap': 'round' });
+    el('text', { x: cx + (R + 14) * Math.cos(d), y: cy - (R + 14) * Math.sin(d) + 4, 'text-anchor': 'middle', fill: 'var(--ink)', 'font-size': 12, 'font-family': 'IBM Plex Mono, monospace' }, svg).textContent = 'a' + sub(i);
+  });
+  el('circle', { cx, cy, r: 3, fill: 'var(--ink)' }, svg);
+}
+// one card's filmstrip: dirs[j] = direction of the type's ray j in the drawing frame; A = visible ray directions
+function filmstrip(card, dirs, A) {
+  const film = document.createElement('div'); film.className = 'film';
+  const N = card.rays.length, status = new Array(N).fill(0), label = new Array(N);
+  let hn = 0;
+  const scaf = new Set((card.scaffold ? card.scaffold.steps : []).flatMap(i => card.steps[i]));
+  card.rays.forEach((r, j) => { if (r[0] === 'v') { const i = A.findIndex(x => Math.abs(nrm(x - dirs[j] + 1e-9) - 1e-9) < 1e-6); label[j] = 'a' + sub(i); } });
+  card.steps.forEach(T => T.forEach(j => { if (card.rays[j][0] === 'h' && !label[j]) label[j] = 'h' + sub(++hn); }));
+  card.steps.forEach((T, i) => {
+    const made = T.filter(j => status[j] === 0), erased = T.filter(j => status[j] === 1);
+    T.forEach(j => { status[j] = status[j] === 0 ? 1 : 2; });
+    const fr = document.createElement('div'); fr.className = 'frame';
+    const svg = document.createElementNS(svgNS, 'svg'); svg.setAttribute('viewBox', '0 0 96 96');
+    svg.setAttribute('role', 'img');
+    const cx = 48, cy = 48, R = 38;
+    el('circle', { cx, cy, r: R, fill: 'none', stroke: 'var(--rule)' }, svg);
+    A.forEach(d => rayLine(svg, cx, cy, R, d, { stroke: 'var(--rule)', 'stroke-width': 1 }));
+    for (let j = 0; j < N; j++) {
+      if (status[j] !== 1 || made.includes(j)) continue;
+      const h = card.rays[j][0] === 'h';
+      rayLine(svg, cx, cy, R, dirs[j], { stroke: h ? 'var(--hidden)' : 'var(--ink)', 'stroke-width': 1.4, 'stroke-dasharray': h ? (scaf.has(j) ? '1.5 2.5' : '4 3') : '' });
+    }
+    for (const j of erased) {
+      rayLine(svg, cx, cy, R, dirs[j], { stroke: 'var(--hidden)', 'stroke-width': 1, opacity: 0.45, 'stroke-dasharray': '1.5 2.5' });
+      const x = cx + R * Math.cos(dirs[j]), y = cy - R * Math.sin(dirs[j]);
+      el('path', { d: `M${x - 4} ${y - 4} L${x + 4} ${y + 4} M${x + 4} ${y - 4} L${x - 4} ${y + 4}`, stroke: 'var(--hidden)', 'stroke-width': 1.6 }, svg);
+    }
+    for (const j of made) {
+      const h = card.rays[j][0] === 'h';
+      rayLine(svg, cx, cy, R, dirs[j], { stroke: h ? 'var(--hidden)' : 'var(--ink)', 'stroke-width': 3.2, 'stroke-linecap': 'round', 'stroke-dasharray': h ? (scaf.has(j) ? '2 4' : '6 3') : '' });
+    }
+    el('circle', { cx, cy, r: 2.2, fill: 'var(--ink)' }, svg);
+    el('text', { x: 4, y: 12, fill: 'var(--ink-3)', 'font-size': 10, 'font-family': 'IBM Plex Mono, monospace' }, svg).textContent = i + 1;
+    const cap = document.createElement('div'); cap.className = 'cap';
+    const isScaf = card.scaffold && card.scaffold.steps.includes(i);
+    cap.textContent = (isScaf ? 'scaffold ' : '') + made.map(j => label[j]).join(' ') + (erased.length ? (made.length ? ' · ' : '') + '✕' + erased.map(j => label[j]).join(' ✕') : '');
+    svg.setAttribute('aria-label', `Step ${i + 1}: ${cap.textContent}`);
+    fr.append(svg, cap); film.appendChild(fr);
+  });
+  return film;
+}
+function fracStr(s) { const [p, q] = s.split('/').map(Number); return [p, q || 1]; }
+function formulaText(f) {
+  const terms = f.coef.map(fracStr);
+  const L = terms.reduce((l, [, q]) => { const g = (a, b) => b ? g(b, a % b) : a; return l * q / g(l, q); }, 1);
+  const nums = terms.map(([p, q]) => p * L / q);
+  let s = '';
+  nums.forEach((n, i) => { if (!n) return; const v = 'a' + sub(i + 1), m = Math.abs(n) === 1 ? '' : Math.abs(n);
+    s += (s ? (n > 0 ? ' + ' : ' − ') : (n < 0 ? '−' : '')) + m + v; });
+  if (!s) s = '0';
+  if (L !== 1) s = (s.includes(' ') ? '(' + s + ')' : s) + '/' + L;
+  const [cp, cq] = fracStr(f.const), c = 180 * cp / cq;
+  if (c) s += ' + ' + fmt(c);
+  return 'λ ≡ ' + s + ' (mod 180°)';
+}
+function strip(s, ci, t) {
+  const svg = document.createElementNS(svgNS, 'svg'); svg.setAttribute('class', 'strip'); svg.setAttribute('viewBox', '0 0 600 16'); svg.setAttribute('preserveAspectRatio', 'none');
+  svg.setAttribute('aria-hidden', 'true');
+  const X = u => 600 * u / s.tmax;
+  el('rect', { x: 0, y: 4, width: 600, height: 8, rx: 4, fill: 'var(--track)' }, svg);
+  for (const [lo, hi, v] of s.cards[ci].iv) {
+    const a = Math.max(0, lo), b = Math.min(s.tmax, hi);
+    if (!v || b <= a) continue;
+    el('rect', { x: X(a), y: 4, width: Math.max(1, X(b) - X(a)), height: 8, fill: v === 2 ? 'var(--rigid)' : 'var(--rev)', opacity: v === 2 ? 1 : 0.75 }, svg);
+  }
+  for (const [x, , vals] of s.special) {
+    const v = vals[ci], inside = s.cards[ci].iv.some(([lo, hi, w]) => lo < x && x < hi && (w || 0) === v);
+    if (v && !inside) el('rect', { x: X(x) - 2, y: 1, width: 4, height: 14, rx: 2, fill: v === 2 ? 'var(--rigid)' : 'var(--rev)' }, svg);
+  }
+  el('rect', { x: X(t) - 1, y: 0, width: 2, height: 16, fill: 'var(--sel)' }, svg);
+  return svg;
+}
+const STATUS = { 2: ['rigid', 'Rigid here'], 1: ['rev', 'Reverse folds here'], 0: ['', 'Not realizable here'] };
+
+// ------------------------------------------------------------------ stratum view
+function openStratum(s, t, opts = {}) {
+  state.view = 'stratum'; state.s = s; state.t = t;
+  const D = document.getElementById('detail'); D.innerHTML = '';
+  const head = document.createElement('section'); head.className = 'head';
+  const nP = s.cards.length, nDom = s.cards.filter(c => c.dominated).length;
+  head.innerHTML = `<span class="eyebrow">Stratum · ${s.kind === 'line' ? 'a line of vertex shapes' : 'a single vertex shape'}</span>
+    <h2 class="mono" style="font-family:var(--f-mono);font-weight:500">${s.cond}</h2>
+    <div class="facts"><span>${nP ? nP + ' physical histor' + (nP === 1 ? 'y' : 'ies') : 'No physical history'}${nDom ? `, ${nDom} dominated` : ''}</span>
+    <span>${s.nonphysical} other table entr${s.nonphysical === 1 ? 'y' : 'ies'} here, never realizable</span>
+    ${s.kind === 'line' && s.tmax < 1 ? '<span>The line is symmetric end to end, so only its first half is shown</span>' : ''}</div>`;
+  D.appendChild(head);
+  const vb = document.createElement('section'); vb.className = 'box vertexbox';
+  const vs = document.createElementNS(svgNS, 'svg'); vs.setAttribute('viewBox', '0 0 220 220'); vs.setAttribute('width', '220'); vs.setAttribute('height', '220');
+  vs.setAttribute('role', 'img'); vs.setAttribute('aria-label', 'The vertex at the selected point of the stratum');
+  const ctr = document.createElement('div'); ctr.className = 'controls';
+  vb.append(vs, ctr); D.appendChild(vb);
+  const ro = document.createElement('div'); ro.className = 'readout mono';
+  ctr.appendChild(ro);
+  let slider = null;
+  if (s.kind === 'line') {
+    const lab = document.createElement('label'); lab.className = 'eyebrow'; lab.htmlFor = 'tslider'; lab.textContent = 'Move along the stratum';
+    slider = document.createElement('input'); slider.type = 'range'; slider.id = 'tslider'; slider.min = 1; slider.max = 999; slider.step = 1;
+    const sumStrip = document.createElementNS(svgNS, 'svg'); sumStrip.setAttribute('class', 'strip'); sumStrip.setAttribute('viewBox', '0 0 600 16'); sumStrip.setAttribute('preserveAspectRatio', 'none'); sumStrip.setAttribute('aria-hidden', 'true');
+    for (const [x, y, k, rigid] of s.summary) {
+      el('rect', { x: 600 * x / s.tmax, y: 3, width: 600 * (y - x) / s.tmax, height: 10, fill: k == null ? 'var(--track)' : kColor(k) }, sumStrip);
+      if (k != null && !rigid) el('rect', { x: 600 * x / s.tmax, y: 7, width: 600 * (y - x) / s.tmax, height: 2, fill: 'var(--panel)' }, sumStrip);
+    }
+    ctr.append(lab, sumStrip, slider);
+    const chips = document.createElement('div'); chips.className = 'chips';
+    const pinAt = Q => DATA.pins.find(p => { const T = toTriangle(Q); return T && Math.abs(p[0] - deg(T[0])) < 1e-6 && Math.abs(p[1] - deg(T[1])) < 1e-6; });
+    for (const [x] of s.special) {
+      const Q = pointAt(s, x), pin = pinAt(Q);
+      const b = document.createElement('button'); b.type = 'button'; if (pin) b.className = 'pin';
+      b.textContent = fmt(deg(Q[0])) + ', ' + fmt(deg(Q[1]));
+      if (pin) b.title = pin[4].join(', ');
+      b.addEventListener('click', () => { state.t = x; update(); });
+      chips.appendChild(b);
+    }
+    if (s.special.length) { const l = document.createElement('div'); l.className = 'eyebrow'; l.textContent = 'Special vertices on this stratum (◆ used in the corpus)'; ctr.append(l, chips); }
+    slider.addEventListener('input', () => {
+      let t = s.tmax * slider.value / 1000;
+      const snap = s.special.find(r => Math.abs(r[0] - t) < s.tmax * 0.006);
+      state.t = snap ? snap[0] : t; update(false);
+    });
+  }
+  const tb = document.createElement('div'); tb.className = 'toolbar';
+  tb.innerHTML = `<label><input type="checkbox" id="onlyHere" ${state.onlyHere ? 'checked' : ''}> Only histories realizable at this vertex</label>` +
+    (nDom ? `<label><input type="checkbox" id="showDom" ${state.showDominated ? 'checked' : ''}> Show ${nDom} dominated</label>` : '');
+  D.appendChild(tb);
+  const cardsEl = document.createElement('section'); cardsEl.className = 'cards'; D.appendChild(cardsEl);
+  tb.querySelector('#onlyHere').addEventListener('change', e => { state.onlyHere = e.target.checked; update(); });
+  if (nDom) tb.querySelector('#showDom').addEventListener('change', e => { state.showDominated = e.target.checked; update(); });
+
+  function update(moveSlider = true) {
+    const t = state.t, Q = pointAt(s, t);
+    if (slider && moveSlider) slider.value = Math.round(1000 * t / s.tmax);
+    drawVertex(vs, Q);
+    const th = [Q[0], Q[1], 1 - Q[0], 1 - Q[1]].map(deg);
+    ro.innerHTML = th.map((v, i) => `<div><span>θ${sub(i + 1)}</span> ${fmt(v)}</div>`).join('');
+    cardsEl.innerHTML = '';
+    const sigs = {}; let shown = 0;
+    s.cards.forEach((c, ci) => {
+      if (c.dominated && !state.showDominated) return;
+      const v = valueAt(s, ci, t);
+      if (state.onlyHere && !v) return;
+      const dirs = v ? cardDirs(c, Q) : null;
+      let dup = null;
+      if (dirs) { const sg = signature(c, dirs, Q); if (sg in sigs) dup = sigs[sg]; else sigs[sg] = ci + 1; }
+      cardsEl.appendChild(cardEl(s, ci, t, v, dirs, raysOf(Q), dup)); shown++;
+    });
+    if (!shown) cardsEl.innerHTML = `<p class="empty">${nP ? 'No history shown here. Move along the stratum, or include dominated histories.' : 'The tables have entries on this stratum, but none is realizable with paper anywhere on it.'}</p>`;
+    markAtlas();
+  }
+  update();
+  if (!opts.keepScroll && innerWidth <= 900) D.scrollIntoView({ block: 'start' });
+}
+function cardEl(s, ci, t, v, dirs, A, dup) {
+  const c = s.cards[ci], box = document.createElement('article'); box.className = 'card' + (v && !dup ? '' : ' off');
+  const [cls, txt] = dup ? ['', 'Same as #' + dup + ' at this vertex'] : STATUS[v];
+  const top = document.createElement('div'); top.className = 'top';
+  top.innerHTML = `<span class="num">#${ci + 1}</span><span class="what">${c.k} hidden ray${c.k === 1 ? '' : 's'} · ${c.steps.length} steps</span>
+    <span class="status ${cls}">${txt}</span>${c.scaffold ? '<span class="tag">scaffold line</span>' : ''}${c.dominated ? '<span class="tag" style="color:var(--ink-3);border-color:var(--ink-3)">dominated</span>' : ''}`;
+  box.appendChild(top);
+  if (s.kind === 'line') box.appendChild(strip(s, ci, t));
+  if (c.formula) {
+    const f = document.createElement('div'); f.className = 'formula';
+    f.textContent = c.formula.map(fm => 'Step ' + (fm.step + 1) + ': ' + formulaText(fm) + (dirs ? ', here ' + fmt(deg(modpi(dirs[c.steps[fm.step][0]]) / PI)) : '')).join('; ');
+    box.appendChild(f);
+  }
+  if (dirs) box.appendChild(filmstrip(c, dirs, A));
+  else { const p = document.createElement('p'); p.className = 'empty'; p.textContent = 'Move to a vertex where this history is realizable to see its steps.'; box.appendChild(p); }
+  return box;
+}
+
+// ------------------------------------------------------------------ vertex view
+function openVertex(Q, names) {
+  Q = toTriangle(Q); if (!Q) return;
+  state.view = 'vertex'; state.Q = Q;
+  const D = document.getElementById('detail'); D.innerHTML = '';
+  const th = [Q[0], Q[1], 1 - Q[0], 1 - Q[1]].map(deg);
+  const head = document.createElement('section'); head.className = 'head';
+  head.innerHTML = `<span class="eyebrow">Vertex shape</span><h2 class="mono" style="font-family:var(--f-mono);font-weight:500">${th.map(fmt).join(' · ')}</h2>`;
+  if (names && names.length) head.innerHTML += `<div class="facts"><span>Used in ${names.map(n => n.replace(/^\d+_/, '').replace(/_/g, ' ')).join(', ')}</span></div>`;
+  D.appendChild(head);
+  const vb = document.createElement('section'); vb.className = 'box vertexbox';
+  const vs = document.createElementNS(svgNS, 'svg'); vs.setAttribute('viewBox', '0 0 220 220'); vs.setAttribute('width', '220'); vs.setAttribute('height', '220'); vs.setAttribute('role', 'img'); vs.setAttribute('aria-label', 'The vertex');
+  drawVertex(vs, Q);
+  const info = document.createElement('div'); info.className = 'controls';
+  vb.append(vs, info); D.appendChild(vb);
+  const A = raysOf(Q), sigs = {}, groups = [];
+  for (const s of S) {
+    const seen = [];
+    for (const g of GROUP) {
+      const R = act(g, Q);
+      if (seen.some(r => near(r, R))) continue; seen.push(R);
+      let t;
+      if (s.kind === 'point') { if (!near(R, s.point)) continue; t = 0; }
+      else {
+        const [a, b, c] = s.line;
+        if (Math.abs(a * R[0] + b * R[1] - c) > 1e-9) continue;
+        t = Math.abs(s.P1[0] - s.P0[0]) > 1e-12 ? (R[0] - s.P0[0]) / (s.P1[0] - s.P0[0]) : (R[1] - s.P0[1]) / (s.P1[1] - s.P0[1]);
+        if (t <= 1e-9 || t > s.tmax + 1e-9 || t >= 1 - 1e-9) continue;
+        const sp = s.special.find(r => Math.abs(r[0] - t) < 1e-7); if (sp) t = sp[0];
+      }
+      const items = [];
+      s.cards.forEach((c, ci) => {
+        const v = valueAt(s, ci, t); if (!v) return;
+        const d = cardDirs(c, R); if (!d) return;
+        const back = isoInv(g, Q), dirs = d.map(back);
+        const sg = signature(c, dirs, Q);
+        if (sg in sigs) return; sigs[sg] = 1;
+        items.push({ ci, v, dirs });
+      });
+      groups.push({ s, t, items });
+    }
+  }
+  const total = groups.reduce((n, g) => n + g.items.length, 0);
+  const nOn = new Set(groups.map(g => g.s)).size, nWith = new Set(groups.filter(g => g.items.length).map(g => g.s)).size;
+  info.innerHTML = `<p>${total ? total + ' histor' + (total === 1 ? 'y is' : 'ies are') + ' realizable at this vertex, from ' + nWith + ' strat' + (nWith === 1 ? 'um' : 'a') + '.' : 'No history in the tables is realizable at this vertex.'}</p>
+    <p class="empty">The vertex lies on ${nOn} strat${nOn === 1 ? 'um' : 'a'}. Each history is drawn in this vertex's own frame; scaffold formulas are given on the stratum pages.</p>`;
+  for (const { s, t, items } of groups.sort((a, b) => b.items.length - a.items.length)) {
+    const gEl = document.createElement('section'); gEl.className = 'group';
+    const gh = document.createElement('div'); gh.className = 'gh';
+    const open = document.createElement('button'); open.className = 'link mono'; open.type = 'button'; open.textContent = s.cond;
+    open.addEventListener('click', () => openStratum(s, t));
+    const n = document.createElement('span'); n.className = 'empty'; n.textContent = items.length ? items.length + ' histor' + (items.length === 1 ? 'y' : 'ies') + ' here' : 'nothing realizable here';
+    gh.append(open, n); gEl.appendChild(gh);
+    for (const { ci, v, dirs } of items) {
+      const c = s.cards[ci], box = document.createElement('article'); box.className = 'card';
+      const [cls, txt] = STATUS[v];
+      box.innerHTML = `<div class="top"><span class="num">#${ci + 1}</span><span class="what">${c.k} hidden ray${c.k === 1 ? '' : 's'} · ${c.steps.length} steps</span><span class="status ${cls}">${txt}</span>${c.scaffold ? '<span class="tag">scaffold line</span>' : ''}</div>`;
+      if (c.formula) { const f = document.createElement('div'); f.className = 'formula'; f.textContent = c.formula.map(fm => 'Step ' + (fm.step + 1) + ': scaffold line at ' + fmt(deg(modpi(dirs[c.steps[fm.step][0]]) / PI))).join('; '); box.appendChild(f); }
+      box.appendChild(filmstrip(c, dirs, A));
+      gEl.appendChild(box);
+    }
+    D.appendChild(gEl);
+  }
+  markAtlas();
+  if (innerWidth <= 900) D.scrollIntoView({ block: 'start' });
+}
+
+document.getElementById('find').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = ['th1', 'th2', 'th3', 'th4'].map(id => parseFloat(document.getElementById(id).value.replace(',', '.')));
+  const msg = document.getElementById('findmsg');
+  if (v.some(x => !(x > 0))) { msg.textContent = 'Enter four positive angles, in order around the vertex.'; return; }
+  if (Math.abs(v.reduce((a, b) => a + b) - 360) > 0.01) { msg.textContent = 'The angles must add up to 360°.'; return; }
+  if (Math.abs(v[0] + v[2] - 180) > 0.01) { msg.textContent = 'Not flat-foldable: θ₁ + θ₃ must be 180°.'; return; }
+  msg.textContent = '';
+  const Q = [v[0] / 180, v[1] / 180];
+  const pin = DATA.pins.find(p => { const T = toTriangle(Q); return Math.abs(p[0] - deg(T[0])) < 1e-6 && Math.abs(p[1] - deg(T[1])) < 1e-6; });
+  openVertex(Q, pin ? pin[4] : null);
+});
+
+drawAtlas(); drawIndex();
+// open at the Dutch Rabbit vertex (22.5, 90, 157.5, 90): the stratum theta_2 = 90 deg
+(function () {
+  const s = S.find(s => s.kind === 'line' && s.line[0] === 0 && s.line[1] === 2 && s.line[2] === 1) || S.find(s => s.cards.length);
+  const sp = s.special.find(r => { const Q = pointAt(s, r[0]); return Math.abs(deg(Q[0]) - 22.5) < 1e-6 || Math.abs(deg(1 - Q[0]) - 22.5) < 1e-6; });
+  openStratum(s, sp ? sp[0] : defaultT(s), { keepScroll: true });
+})();
+</script>
